@@ -1,0 +1,9 @@
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/../../../bootstrap/app.php';
+
+use BT\App\API\V1\SyncController;
+
+(new SyncController())->handle();

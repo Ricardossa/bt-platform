@@ -1,0 +1,10 @@
+# BT Platform - Git Ignore
+/storage/updates/*.zip
+/public/uploads/*
+!/public/uploads/.gitkeep
+/99_QUARENTENA/
+.idea/
+.vscode/
+*.log
+.DS_Store
+config/database.php
