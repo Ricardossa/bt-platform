@@ -15,7 +15,8 @@ A **BT Platform** é o sistema central de gestão do ecossistema BT Queue. Sua r
 - Extensões PHP: `pdo_mysql`, `curl`, `zip`, `json`.
 
 ## Instalação e Configuração
-Consulte o guia detalhado em [docs/instalacao.md](docs/instalacao.md).
+- Para a Plataforma Master, consulte [docs/instalacao.md](docs/instalacao.md).
+- Para implantação em clientes (NOC), consulte o [Manual de Implantação](docs/MANUAL_INSTALACAO.md).
 
 ---
 © 2026 Brandão Tech - Todos os direitos reservados.
