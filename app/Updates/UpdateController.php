@@ -88,6 +88,33 @@ final class UpdateController
         }
     }
 
+    public function excluir(int $id): array
+    {
+        try {
+            $release = Database::fetch('SELECT * FROM updates WHERE id = ?', [$id]);
+            if (!$release) {
+                throw new Exception('Lançamento não encontrado.');
+            }
+
+            $file = basename((string) $release['arquivo_path']);
+            $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+            $subPasta = ($ext === 'zip') ? 'updates/' : 'apks/';
+            $path = dirname(__DIR__, 2) . '/storage/' . $subPasta . $file;
+
+            // Remove o arquivo físico se existir
+            if (is_file($path)) {
+                @unlink($path);
+            }
+
+            // Remove do banco de dados
+            Database::execute('DELETE FROM updates WHERE id = ?', [$id]);
+
+            return ['success' => true, 'message' => 'Lançamento removido com sucesso.'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
     public function getLatest(string $produto = 'BT_QUEUE_ENTERPRISE'): ?array
     {
         $valid = [];

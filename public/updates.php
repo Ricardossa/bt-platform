@@ -19,6 +19,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     else $error = $res['message'];
 }
 
+if (isset($_GET['delete'])) {
+    $res = $controller->excluir((int)$_GET['delete']);
+    if ($res['success']) $success = $res['message'];
+    else $error = $res['message'];
+}
+
 $historico = $controller->listar();
 $pageTitle = 'Gestão de Atualizações OTA';
 
@@ -89,6 +95,7 @@ require_once __DIR__ . '/includes/header.php';
                         <th>Versão</th>
                         <th>Data</th>
                         <th>Status</th>
+                        <th align="right">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -103,6 +110,14 @@ require_once __DIR__ . '/includes/header.php';
                         <td style="font-size:12px;"><?= date('d/m/Y H:i', strtotime($up['created_at'])) ?></td>
                         <td>
                             <?= $up['is_mandatory'] ? '<span class="badge danger">Obrigatória</span>' : '<span class="badge success">Opcional</span>' ?>
+                        </td>
+                        <td align="right">
+                            <a href="?delete=<?= $up['id'] ?>"
+                               class="bt-button"
+                               style="color:var(--danger); padding: 5px 10px;"
+                               onclick="return confirm('Deseja realmente excluir esta versão e o arquivo físico do servidor?')">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </a>
                         </td>
                     </tr>
                     <?php endforeach; ?>
