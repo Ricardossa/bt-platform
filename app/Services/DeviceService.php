@@ -41,9 +41,11 @@ final class DeviceService
         string $deviceUuid,
         Request $request
     ): int {
-        $fabricante = (string) $request->input('device.fabricante');
-        $modelo = (string) $request->input('device.modelo');
-        $android = (string) $request->input('device.android');
+        // --- CAPTURA HÍBRIDA (Objeto ou Plano) ---
+        $fabricante = $request->input('device.fabricante') ?: $request->input('device_fabricante');
+        $modelo = $request->input('device.modelo') ?: $request->input('device_modelo');
+        $android = $request->input('device.android') ?: $request->input('device_android');
+
         $versaoApp = (string) $request->input('versao');
         $ip = $request->ip();
 
@@ -82,9 +84,12 @@ final class DeviceService
     ): void {
         $versaoApp = (string) $request->input('versao');
         $ip = $request->ip();
-        $bateria = (int) $request->input('device.bateria');
-        $wifi = (string) $request->input('device.wifi');
 
+        // --- CAPTURA HÍBRIDA (Objeto ou Plano) ---
+        $bateria = $request->input('device.bateria') ?: $request->input('device_bateria');
+        $wifi = $request->input('device.wifi') ?: $request->input('device_wifi');
+
+        $bateria = (int) $bateria;
         $bateria = $bateria > 0 ? $bateria : null;
 
         Database::execute(
