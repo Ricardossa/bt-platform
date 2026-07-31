@@ -19,10 +19,21 @@ if (!$release) {
 }
 
 $filename = basename((string) $release['arquivo_path']);
-$path = dirname(__DIR__, 3) . '/storage/updates/' . $filename;
+$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+$subPasta = ($ext === 'zip') ? 'updates/' : 'apks/';
+$path = dirname(__DIR__, 3) . '/storage/' . $subPasta . $filename;
 
-header('Content-Type: application/zip');
+if (!is_file($path)) {
+    http_response_code(404);
+    exit('Arquivo físico não encontrado no servidor.');
+}
+
+$contentType = ($ext === 'apk') ? 'application/vnd.android.package-archive' : 'application/zip';
+
+header('Content-Type: ' . $contentType);
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 header('Content-Length: ' . filesize($path));
 header('X-Content-Type-Options: nosniff');
+header('Cache-Control: no-cache, must-revalidate');
+
 readfile($path);

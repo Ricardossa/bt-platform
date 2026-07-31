@@ -21,6 +21,7 @@ final class UpdateController
     {
         try {
             $versao = $this->normalizeVersion((string) ($dados['versao'] ?? ''));
+            $produto = trim((string) ($dados['produto'] ?? 'BT_QUEUE_ENTERPRISE'));
             $changelog = trim((string) ($dados['changelog'] ?? ''));
             $isMandatory = isset($dados['is_mandatory']) ? 1 : 0;
 
@@ -40,49 +41,69 @@ final class UpdateController
                 $msg = $phpErrors[$arquivo['error']] ?? "Erro desconhecido no upload.";
                 throw new Exception($msg);
             }
-            if (strtolower((string) pathinfo((string) $arquivo['name'], PATHINFO_EXTENSION)) !== 'zip') {
-                throw new Exception('Apenas arquivos ZIP sao permitidos.');
+
+            $ext = strtolower((string) pathinfo((string) $arquivo['name'], PATHINFO_EXTENSION));
+
+            // Validação por tipo de produto
+            if ($produto === 'BT1_COLETOR_PRO' && $ext !== 'apk') {
+                throw new Exception('Para o Coletor Pro, apenas arquivos .apk sao permitidos.');
             }
+            if ($produto === 'BT_QUEUE_ENTERPRISE' && $ext !== 'zip') {
+                throw new Exception('Para a Enterprise, apenas arquivos .zip sao permitidos.');
+            }
+
             if ((int) ($arquivo['size'] ?? 0) < 1 || (int) $arquivo['size'] > self::MAX_PACKAGE_SIZE) {
                 throw new Exception('O pacote OTA possui tamanho invalido.');
             }
 
-            $this->validateArchive((string) $arquivo['tmp_name']);
+            // Validação interna apenas para ZIPs
+            if ($ext === 'zip') {
+                $this->validateArchive((string) $arquivo['tmp_name']);
+            }
 
-            $nomeFinal = 'bt_update_' . str_replace('.', '_', $versao) . '_' . time() . '.zip';
-            $destinoRaiz = dirname(__DIR__, 2) . '/storage/updates/';
+            $prefixo = ($ext === 'zip') ? 'bt_update_' : 'bt_app_';
+            $nomeFinal = $prefixo . str_replace('.', '_', $versao) . '_' . time() . '.' . $ext;
+
+            $subPasta = ($ext === 'zip') ? 'updates/' : 'apks/';
+            $destinoRaiz = dirname(__DIR__, 2) . '/storage/' . $subPasta;
+
             if (!is_dir($destinoRaiz) && !mkdir($destinoRaiz, 0775, true) && !is_dir($destinoRaiz)) {
                 throw new Exception('Nao foi possivel preparar o armazenamento OTA.');
             }
 
             $caminhoCompleto = $destinoRaiz . $nomeFinal;
             if (!move_uploaded_file((string) $arquivo['tmp_name'], $caminhoCompleto)) {
-                throw new Exception('Falha ao armazenar o pacote OTA.');
+                throw new Exception('Falha ao armazenar o arquivo no servidor.');
             }
 
             $hash = hash_file('sha256', $caminhoCompleto);
             Database::execute(
-                'INSERT INTO updates (versao, arquivo_path, checksum_sha256, changelog, is_mandatory, canal) VALUES (?, ?, ?, ?, ?, ?)',
-                [$versao, $nomeFinal, $hash, $changelog, $isMandatory, 'stable']
+                'INSERT INTO updates (produto, versao, arquivo_path, checksum_sha256, changelog, is_mandatory, canal) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [$produto, $versao, $nomeFinal, $hash, $changelog, $isMandatory, 'stable']
             );
 
-            return ['success' => true, 'message' => 'Versao publicada com sucesso.'];
+            return ['success' => true, 'message' => 'Lançamento publicado com sucesso.'];
         } catch (Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
-    public function getLatest(): ?array
+    public function getLatest(string $produto = 'BT_QUEUE_ENTERPRISE'): ?array
     {
         $valid = [];
-        foreach (Database::fetchAll('SELECT * FROM updates') as $release) {
+        $releases = Database::fetchAll('SELECT * FROM updates WHERE produto = ?', [$produto]);
+
+        foreach ($releases as $release) {
             $version = $this->normalizeVersion((string) ($release['versao'] ?? ''));
             $file = basename((string) ($release['arquivo_path'] ?? ''));
-            $path = dirname(__DIR__, 2) . '/storage/updates/' . $file;
+
+            $subPasta = (str_ends_with($file, '.zip')) ? 'updates/' : 'apks/';
+            $path = dirname(__DIR__, 2) . '/storage/' . $subPasta . $file;
 
             if ($version === null || $file === '' || !is_file($path)) {
                 continue;
             }
+
             if (!hash_equals((string) $release['checksum_sha256'], (string) hash_file('sha256', $path))) {
                 continue;
             }
@@ -91,6 +112,8 @@ final class UpdateController
             $release['arquivo_path'] = $file;
             $valid[] = $release;
         }
+
+        if (empty($valid)) return null;
 
         usort($valid, static fn(array $a, array $b): int => version_compare($b['versao'], $a['versao']));
         return $valid[0] ?? null;
@@ -104,7 +127,9 @@ final class UpdateController
         }
 
         $file = basename((string) $release['arquivo_path']);
-        $path = dirname(__DIR__, 2) . '/storage/updates/' . $file;
+        $subPasta = (str_ends_with($file, '.zip')) ? 'updates/' : 'apks/';
+        $path = dirname(__DIR__, 2) . '/storage/' . $subPasta . $file;
+
         if (!is_file($path) || !hash_equals((string) $release['checksum_sha256'], (string) hash_file('sha256', $path))) {
             return null;
         }

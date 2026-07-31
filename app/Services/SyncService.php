@@ -227,6 +227,33 @@ final class SyncService
             ];
         }
 
+        // ==========================================
+        // 7. VERIFICA ATUALIZAÇÕES (OTA)
+        // ==========================================
+        $updateData = ['available' => false];
+        $updateController = new \BT\App\Updates\UpdateController();
+        $latestUpdate = $updateController->getLatest($produto);
+
+        if ($latestUpdate) {
+            $currentVer = (string) $request->input('versao', '0.0.0');
+            // Remove 'v' ou outros prefixos para comparar
+            $currentVerClean = ltrim(strtolower($currentVer), 'v');
+            $latestVerClean = ltrim(strtolower($latestUpdate['versao']), 'v');
+
+            if (version_compare($latestVerClean, $currentVerClean, '>')) {
+                $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
+                $apkUrl = "$protocol://{$_SERVER['HTTP_HOST']}/api/v1/updates_download.php?id=" . (int)$latestUpdate['id'];
+
+                $updateData = [
+                    'available' => true,
+                    'versionName' => $latestUpdate['versao'],
+                    'apkUrl' => $apkUrl,
+                    'mandatory' => (bool)$latestUpdate['is_mandatory'],
+                    'changelog' => $latestUpdate['changelog']
+                ];
+            }
+        }
+
         $this->atualizarPresenca(
             (int) $instalacao['id'],
             $request
@@ -238,53 +265,27 @@ final class SyncService
         ], $instalacao['nome']);
 
         return [
-
             'status' => 'OK',
-
             'sync' => [
-
                 'id' => bin2hex(random_bytes(4)),
-
                 'server' => [
-
                     'time' => gmdate('c'),
-
                     'heartbeat' => 60,
-
                     'platform' => '2.0.0'
-
                 ],
-
                 'license' => [
-
                     'status'  => $licenca['status'],
-
                     'type'    => $licenca['tipo'],
-
                     'expires' => $licenca['data_validade']
-
                 ],
-
                 'features' => $features,
-
-                'update' => [
-
-                    'available' => false
-
-                ],
-
+                'update' => $updateData,
                 'configuration' => [
-
                     'changed' => false
-
                 ],
-
                 'commands' => [],
-
                 'messages' => []
-
             ]
-
         ];
     }
 }

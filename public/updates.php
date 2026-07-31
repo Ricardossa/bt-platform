@@ -43,13 +43,21 @@ require_once __DIR__ . '/includes/header.php';
         <section class="bt-card">
             <form method="POST" enctype="multipart/form-data">
                 <div class="form-group">
+                    <label>Produto de Atualização</label>
+                    <select name="produto" class="form-control" required>
+                        <option value="BT_QUEUE_ENTERPRISE">🎫 BT Queue Enterprise (ZIP)</option>
+                        <option value="BT1_COLETOR_PRO">📱 BT1 Coletor Pro (APK)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-top:15px;">
                     <label>Número da Versão (ex: 4.3.0)</label>
                     <input type="text" name="versao" class="form-control" placeholder="X.X.X" required>
                 </div>
 
                 <div class="form-group" style="margin-top:15px;">
-                    <label>Pacote de Atualização (.zip completo)</label>
-                    <input type="file" name="pacote" class="form-control" accept=".zip" required>
+                    <label>Pacote (.zip para Enterprise / .apk para Coletor)</label>
+                    <input type="file" name="pacote" class="form-control" required>
                 </div>
 
                 <div class="form-group" style="margin-top:15px;">
@@ -77,22 +85,24 @@ require_once __DIR__ . '/includes/header.php';
             <table class="bt-table">
                 <thead>
                     <tr>
+                        <th>Produto</th>
                         <th>Versão</th>
                         <th>Data</th>
                         <th>Status</th>
-                        <th>Assinatura (SHA256)</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach($historico as $up): ?>
                     <tr>
+                        <td>
+                            <span style="font-size:11px; font-weight:bold; color:var(--primary);">
+                                <?= $up['produto'] === 'BT1_COLETOR_PRO' ? '📱 COLETOR' : '🎫 ENTERPRISE' ?>
+                            </span>
+                        </td>
                         <td><b style="color:var(--secondary);">v<?= $up['versao'] ?></b></td>
                         <td style="font-size:12px;"><?= date('d/m/Y H:i', strtotime($up['created_at'])) ?></td>
                         <td>
                             <?= $up['is_mandatory'] ? '<span class="badge danger">Obrigatória</span>' : '<span class="badge success">Opcional</span>' ?>
-                        </td>
-                        <td style="font-size:10px; font-family:monospace; opacity:0.6;">
-                            <?= substr($up['checksum_sha256'], 0, 16) ?>...
                         </td>
                     </tr>
                     <?php endforeach; ?>

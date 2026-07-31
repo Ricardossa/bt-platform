@@ -89,6 +89,11 @@ final class DeviceService
         $bateria = $request->input('device.bateria') ?: $request->input('device_bateria');
         $wifi = $request->input('device.wifi') ?: $request->input('device_wifi');
 
+        // --- NOVO: Permite corrigir Modelo/Fabricante se mudarem ou se eram "Desconhecidos" ---
+        $fabricante = $request->input('device.fabricante') ?: $request->input('device_fabricante');
+        $modelo = $request->input('device.modelo') ?: $request->input('device_modelo');
+        $android = $request->input('device.android') ?: $request->input('device_android');
+
         $bateria = (int) $bateria;
         $bateria = $bateria > 0 ? $bateria : null;
 
@@ -100,6 +105,9 @@ final class DeviceService
                 ultima_sincronizacao = NOW(),
                 bateria = ?,
                 wifi = ?,
+                fabricante = COALESCE(?, fabricante),
+                modelo = COALESCE(?, modelo),
+                android = COALESCE(?, android),
                 status = 'ONLINE'
              WHERE id = ?",
             [
@@ -107,6 +115,9 @@ final class DeviceService
                 $ip ?: null,
                 $bateria,
                 $wifi ?: null,
+                $fabricante ?: null,
+                $modelo ?: null,
+                $android ?: null,
                 $dispositivoId
             ]
         );
