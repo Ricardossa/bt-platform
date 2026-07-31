@@ -44,20 +44,39 @@ final class Request
         string $key,
         mixed $default = null
     ): mixed {
+        if (!str_contains($key, '.')) {
+            return $this->json[$key] ?? $default;
+        }
 
-        return $this->json[$key] ?? $default;
+        $array = $this->json;
+        foreach (explode('.', $key) as $segment) {
+            if (is_array($array) && array_key_exists($segment, $array)) {
+                $array = $array[$segment];
+            } else {
+                return $default;
+            }
+        }
 
+        return $array;
     }
 
     public function has(
         string $key
     ): bool {
+        if (!str_contains($key, '.')) {
+            return array_key_exists($key, $this->json);
+        }
 
-        return array_key_exists(
-            $key,
-            $this->json
-        );
+        $array = $this->json;
+        foreach (explode('.', $key) as $segment) {
+            if (is_array($array) && array_key_exists($segment, $array)) {
+                $array = $array[$segment];
+            } else {
+                return false;
+            }
+        }
 
+        return true;
     }
 
 

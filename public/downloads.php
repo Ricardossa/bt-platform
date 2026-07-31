@@ -77,7 +77,24 @@ $protocol = $isHttps ? "https" : "http";
 $host = $_SERVER['HTTP_HOST'];
 $baseUrl = "$protocol://$host/uploads/apks/";
 
-$pageTitle = 'Central de Downloads APK';
+// --- LISTAR KITS DE INSTALAÇÃO ---
+$distDir = __DIR__ . '/uploads/dist/';
+$kits = [];
+if (is_dir($distDir)) {
+    $files = scandir($distDir);
+    foreach ($files as $f) {
+        if ($f === '.' || $f === '..' || !str_ends_with($f, '.zip')) continue;
+        $full = $distDir . $f;
+        $kits[] = [
+            'name' => $f,
+            'size' => round(filesize($full) / 1024 / 1024, 2) . ' MB',
+            'date' => date('d/m/Y H:i', filemtime($full)),
+            'url' => "$protocol://$host/uploads/dist/$f"
+        ];
+    }
+}
+
+$pageTitle = 'Central de Downloads';
 require_once __DIR__ . '/includes/header.php';
 ?>
 
@@ -85,24 +102,63 @@ require_once __DIR__ . '/includes/header.php';
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 
 <style>
-    .apk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; margin-top: 30px; }
+    .download-section { margin-bottom: 50px; }
+    .apk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; margin-top: 20px; }
     .apk-card { background: var(--card); border-radius: 15px; padding: 25px; border: 1px solid var(--border); text-align: center; position: relative; }
     .qr-box { background: #fff; padding: 15px; border-radius: 10px; display: inline-block; margin: 15px 0; }
     .qr-box img { width: 180px; height: 180px; }
     .apk-icon { font-size: 40px; color: var(--primary); margin-bottom: 10px; }
+    .badge-win { background: #0078d4; color: #fff; padding: 3px 10px; border-radius: 10px; font-size: 10px; font-weight: bold; position: absolute; top: 15px; right: 15px; }
 </style>
 
 <main class="bt-main">
 
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-            <h2 style="margin:0;">📲 Central de Downloads APK</h2>
-            <p style="color:var(--text2); font-size:14px; margin-top:5px;">Hospede seus APKs e gere QR Codes para instalação rápida.</p>
+    <!-- SEÇÃO 1: KITS DE INSTALAÇÃO WINDOWS -->
+    <section class="download-section">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <h2 style="margin:0;"><i class="fa-brands fa-windows"></i> Kits de Instalação Enterprise</h2>
+                <p style="color:var(--text2); font-size:14px; margin-top:5px;">Pacotes completos para instalação em novos computadores clientes.</p>
+            </div>
         </div>
-        <button class="bt-button bt-primary" onclick="document.getElementById('uploadBox').style.display='block'">
-            <i class="fa-solid fa-cloud-arrow-up"></i> Subir Novo APK
-        </button>
-    </div>
+
+        <div class="apk-grid">
+            <?php foreach ($kits as $kit): ?>
+                <div class="apk-card">
+                    <span class="badge-win">WINDOWS KIT</span>
+                    <div class="apk-icon"><i class="fa-solid fa-box-open"></i></div>
+                    <h4 style="margin:0;"><?= htmlspecialchars($kit['name']) ?></h4>
+                    <div style="font-size:12px; color:var(--text2); margin-top:5px;">
+                        <span><?= $kit['size'] ?></span> • <span><?= $kit['date'] ?></span>
+                    </div>
+
+                    <div style="margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; text-align: left; font-size: 13px;">
+                        <b style="color: var(--secondary);">Instruções:</b><br>
+                        1. Baixe o ZIP e extraia no cliente.<br>
+                        2. Execute o <code>Ligar_Sistema.bat</code>.
+                    </div>
+
+                    <a href="<?= $kit['url'] ?>" class="bt-button bt-primary" style="width:100%;" download>
+                        <i class="fa-solid fa-download"></i> BAIXAR KIT DE INSTALAÇÃO
+                    </a>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </section>
+
+    <hr style="border:0; border-top:1px solid var(--border); margin: 40px 0;">
+
+    <!-- SEÇÃO 2: APKs MOBILE -->
+    <section class="download-section">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <h2 style="margin:0;"><i class="fa-brands fa-android"></i> Aplicativos APK (Mobile/TV/Totem)</h2>
+                <p style="color:var(--text2); font-size:14px; margin-top:5px;">Hospede seus APKs e gere QR Codes para instalação rápida.</p>
+            </div>
+            <button class="bt-button" onclick="document.getElementById('uploadBox').style.display='block'" style="background:var(--sidebar); border: 1px solid var(--border);">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Subir Novo APK
+            </button>
+        </div>
 
     <?php if($message): ?>
         <div class="bt-alert bt-<?= $messageType ?>" style="margin-top:20px;">
