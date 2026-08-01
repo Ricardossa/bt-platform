@@ -179,7 +179,7 @@ require_once __DIR__ . '/includes/header.php';
             <th>Logo</th>
             <td>
                 <?php if (!empty($platformDados['logo'])): ?>
-                    <img src="/uploads/logo/<?= htmlspecialchars($platformDados['logo']) ?>" style="max-height:60px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
+                    <img src="/uploads/logo/<?= htmlspecialchars($platformDados['logo']) ?>" style="max-height:80px; max-width: 200px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
                 <?php else: ?>
                     <span style="color:var(--text2); font-style:italic;">Nenhuma logo carregada</span>
                 <?php endif; ?>

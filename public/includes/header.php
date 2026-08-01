@@ -42,8 +42,8 @@ $pageTitle = $pageTitle ?? $empresa;
                 src="<?= htmlspecialchars($logoUrl) ?>"
                 alt="<?= htmlspecialchars($empresa) ?>"
                 style="
-                    width:60px;
-                    height:60px;
+                    max-width:180px;
+                    max-height:80px;
                     object-fit:contain;
                 ">
 

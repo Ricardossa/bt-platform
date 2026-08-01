@@ -60,7 +60,7 @@ final class PackageController
             }
 
             // 3. Adicionar TODO o conteúdo da pasta Enterprise (Respeitando filtros)
-            $this->addFolderToZip($this->enterpriseDir, $zip, $this->enterpriseDir);
+            $this->addWhitelistedFilesToZip($zip);
 
             $zip->close();
 
@@ -88,6 +88,87 @@ final class PackageController
         if (file_put_contents($this->versionPath, json_encode($data, JSON_PRETTY_PRINT)) === false) {
             throw new Exception("Falha ao atualizar o arquivo version.json");
         }
+    }
+
+    /**
+     * Build the OTA from an explicit allowlist. Local unit state is never
+     * traversed, so it cannot accidentally become part of a release.
+     */
+    private function addWhitelistedFilesToZip(ZipArchive $zip): void
+    {
+        $this->addAllowedFile($zip, 'bootstrap.php');
+        $this->addAllowedPhpTree($zip, 'core');
+        $this->addAllowedPhpTree($zip, 'public');
+        $this->addAllowedAssetTree($zip, 'public/assets');
+
+        // Versioned installation sources only. config.json is unit-specific.
+        $this->addAllowedFile($zip, 'public/version.json');
+        $this->addAllowedFile($zip, 'config/config.php');
+
+        // Required by the active local installation and OTA post-install step.
+        foreach (['BT_Kernel.vbs', 'BT_Sync_Service.vbs', 'BT_Watchdog.vbs', 'Ligar_Impressora_Local.bat', 'print_bridge.php'] as $file) {
+            $this->addAllowedFile($zip, $file);
+        }
+    }
+
+    private function addAllowedPhpTree(ZipArchive $zip, string $relativeDir): void
+    {
+        $this->addFilesFromTree($zip, $relativeDir, static function (string $relativePath): bool {
+            return str_ends_with(strtolower($relativePath), '.php')
+                && !self::isDevelopmentOrBackupFile($relativePath);
+        });
+    }
+
+    private function addAllowedAssetTree(ZipArchive $zip, string $relativeDir): void
+    {
+        $this->addFilesFromTree($zip, $relativeDir, static function (string $relativePath): bool {
+            return !self::isDevelopmentOrBackupFile($relativePath);
+        });
+    }
+
+    private function addAllowedFile(ZipArchive $zip, string $relativePath): void
+    {
+        $relativePath = str_replace('\\', '/', $relativePath);
+        $path = $this->enterpriseDir . $relativePath;
+
+        if (is_file($path) && !self::isDevelopmentOrBackupFile($relativePath)) {
+            $zip->addFile($path, $relativePath);
+        }
+    }
+
+    /** @param callable(string): bool $isAllowed */
+    private function addFilesFromTree(ZipArchive $zip, string $relativeDir, callable $isAllowed): void
+    {
+        $directory = $this->enterpriseDir . str_replace('/', DIRECTORY_SEPARATOR, $relativeDir);
+        if (!is_dir($directory)) return;
+
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($directory, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::LEAVES_ONLY
+        );
+
+        foreach ($files as $file) {
+            if ($file->isDir()) continue;
+
+            $path = $file->getPathname();
+            $relativePath = str_replace('\\', '/', substr($path, strlen($this->enterpriseDir)));
+
+            if ($isAllowed($relativePath)) {
+                $zip->addFile($path, $relativePath);
+            }
+        }
+    }
+
+    private static function isDevelopmentOrBackupFile(string $relativePath): bool
+    {
+        $normalized = strtolower(str_replace('\\', '/', $relativePath));
+        $name = basename($normalized);
+
+        return preg_match('#(^|/)(\.git|99_quarentena|backups?|cache|logs|uploads?)(/|$)#', $normalized) === 1
+            || $normalized === 'config/config.json'
+            || preg_match('/(^|[._-])(bak|old|tmp|temp|swp|swo|orig|rej|testbak)([._-]|$)/', $name) === 1
+            || preg_match('/(^|[_-])(debug|diag|teste?|audit|fix)([_-]|\.|$)/', $name) === 1
+            || preg_match('#(^|/)\.(idea|vscode)(/|$)#', $normalized) === 1;
     }
 
     private function addFolderToZip(string $dir, ZipArchive $zip, string $baseDir): void
