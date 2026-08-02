@@ -123,7 +123,8 @@ final class DeviceService
                 fabricante = COALESCE(?, fabricante),
                 modelo = COALESCE(?, modelo),
                 android = COALESCE(?, android),
-                status = 'ONLINE'";
+                status = 'ONLINE',
+                ativo = 1";
 
         $params = [
             $versaoApp ?: null,
