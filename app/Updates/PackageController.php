@@ -106,7 +106,7 @@ final class PackageController
         $this->addAllowedFile($zip, 'config/config.php');
 
         // Required by the active local installation and OTA post-install step.
-        foreach (['BT_Kernel.vbs', 'BT_Sync_Service.vbs', 'BT_Watchdog.vbs', 'Ligar_Impressora_Local.bat', 'print_bridge.php'] as $file) {
+        foreach (['BT_Kernel.vbs', 'BT_Sync_Service.vbs', 'BT_Watchdog.vbs', 'Ligar_Impressora_Local.bat', 'print_bridge.php', 'Ligar_Sistema.bat'] as $file) {
             $this->addAllowedFile($zip, $file);
         }
     }

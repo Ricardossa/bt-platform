@@ -83,13 +83,15 @@ $kits = [];
 if (is_dir($distDir)) {
     $files = scandir($distDir);
     foreach ($files as $f) {
-        if ($f === '.' || $f === '..' || !str_ends_with($f, '.zip')) continue;
+        if ($f === '.' || $f === '..' || (!str_ends_with($f, '.zip') && !str_ends_with($f, '.exe'))) continue;
         $full = $distDir . $f;
+        $isExe = str_ends_with($f, '.exe');
         $kits[] = [
             'name' => $f,
             'size' => round(filesize($full) / 1024 / 1024, 2) . ' MB',
             'date' => date('d/m/Y H:i', filemtime($full)),
-            'url' => "$protocol://$host/uploads/dist/$f"
+            'url' => "$protocol://$host/uploads/dist/$f",
+            'is_exe' => $isExe
         ];
     }
 }
@@ -124,22 +126,27 @@ require_once __DIR__ . '/includes/header.php';
 
         <div class="apk-grid">
             <?php foreach ($kits as $kit): ?>
-                <div class="apk-card">
-                    <span class="badge-win">WINDOWS KIT</span>
-                    <div class="apk-icon"><i class="fa-solid fa-box-open"></i></div>
+                <div class="apk-card" style="<?= $kit['is_exe'] ? 'border-color:var(--success);' : '' ?>">
+                    <span class="badge-win" style="<?= $kit['is_exe'] ? 'background:#18C964;' : '' ?>">
+                        <?= $kit['is_exe'] ? 'INSTALADOR EXE' : 'WINDOWS KIT ZIP' ?>
+                    </span>
+                    <div class="apk-icon" style="<?= $kit['is_exe'] ? 'color:#18C964;' : '' ?>">
+                        <i class="fa-solid <?= $kit['is_exe'] ? 'fa-shield-check' : 'fa-box-open' ?>"></i>
+                    </div>
                     <h4 style="margin:0;"><?= htmlspecialchars($kit['name']) ?></h4>
                     <div style="font-size:12px; color:var(--text2); margin-top:5px;">
                         <span><?= $kit['size'] ?></span> • <span><?= $kit['date'] ?></span>
                     </div>
 
                     <div style="margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; text-align: left; font-size: 13px;">
-                        <b style="color: var(--secondary);">Instruções:</b><br>
-                        1. Baixe o ZIP e extraia no cliente.<br>
-                        2. Execute o <code>Ligar_Sistema.bat</code>.
+                        <b style="color: var(--secondary);">Instruções Profissionais:</b><br>
+                        1. Baixe o instalador oficial acima.<br>
+                        2. Execute como Administrador.<br>
+                        3. O sistema e os serviços serão configurados automaticamente.
                     </div>
 
-                    <a href="<?= $kit['url'] ?>" class="bt-button bt-primary" style="width:100%;" download>
-                        <i class="fa-solid fa-download"></i> BAIXAR KIT DE INSTALAÇÃO
+                    <a href="<?= $kit['url'] ?>" class="bt-button" style="width:100%; background:<?= $kit['is_exe'] ? '#18C964' : 'var(--primary)' ?>; color:#fff;" download>
+                        <i class="fa-solid fa-download"></i> <?= $kit['is_exe'] ? 'BAIXAR INSTALADOR OFICIAL' : 'BAIXAR KIT DE INSTALAÇÃO' ?>
                     </a>
                 </div>
             <?php endforeach; ?>
