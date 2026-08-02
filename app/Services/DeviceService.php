@@ -23,6 +23,17 @@ final class DeviceService
         );
     }
 
+    /**
+     * Busca o dispositivo globalmente por UUID, independente da instalacao.
+     */
+    public function buscarPorUuidGlobal(string $deviceUuid): ?array
+    {
+        return Database::fetch(
+            "SELECT * FROM dispositivos WHERE device_uuid = ? LIMIT 1",
+            [$deviceUuid]
+        );
+    }
+
     public function contarAtivos(int $instalacaoId): int
     {
         $result = Database::fetch(
@@ -80,7 +91,8 @@ final class DeviceService
 
     public function atualizar(
         int $dispositivoId,
-        Request $request
+        Request $request,
+        ?int $novaInstalacaoId = null
     ): void {
         $versaoApp = (string) $request->input('versao');
         $ip = $request->ip();
@@ -101,8 +113,7 @@ final class DeviceService
         $bateria = (int) $bateria;
         $bateria = $bateria > 0 ? $bateria : null;
 
-        Database::execute(
-            "UPDATE dispositivos
+        $sql = "UPDATE dispositivos
              SET
                 versao_app = ?,
                 ultimo_ip = ?,
@@ -112,19 +123,27 @@ final class DeviceService
                 fabricante = COALESCE(?, fabricante),
                 modelo = COALESCE(?, modelo),
                 android = COALESCE(?, android),
-                status = 'ONLINE'
-             WHERE id = ?",
-            [
-                $versaoApp ?: null,
-                $ip ?: null,
-                $bateria,
-                $wifi ?: null,
-                $fabricante,
-                $modelo,
-                $android,
-                $dispositivoId
-            ]
-        );
+                status = 'ONLINE'";
+
+        $params = [
+            $versaoApp ?: null,
+            $ip ?: null,
+            $bateria,
+            $wifi ?: null,
+            $fabricante,
+            $modelo,
+            $android
+        ];
+
+        if ($novaInstalacaoId !== null) {
+            $sql .= ", instalacao_id = ?";
+            $params[] = $novaInstalacaoId;
+        }
+
+        $sql .= " WHERE id = ?";
+        $params[] = $dispositivoId;
+
+        Database::execute($sql, $params);
     }
 
     public function registrarOuAtualizar(
@@ -141,10 +160,8 @@ final class DeviceService
             ];
         }
 
-        $dispositivo = $this->buscarPorInstalacaoEId(
-            $instalacaoId,
-            $deviceUuid
-        );
+        // --- BUSCA GLOBAL (Fix Error 500 Duplicate Entry) ---
+        $dispositivo = $this->buscarPorUuidGlobal($deviceUuid);
 
         if ($dispositivo === null) {
             $id = $this->registrar(
@@ -159,9 +176,11 @@ final class DeviceService
             ];
         }
 
+        // Se o dispositivo já existe, apenas atualizamos seus dados e o vínculo
         $this->atualizar(
             (int) $dispositivo['id'],
-            $request
+            $request,
+            $instalacaoId
         );
 
         return [
