@@ -22,7 +22,12 @@ final class PlatformController
             'instagram'      => "VARCHAR(100) NULL",
             'versao_sistema' => "VARCHAR(20) NULL",
             'telefone'       => "VARCHAR(20) NULL",
-            'email'          => "VARCHAR(100) NULL"
+            'email'          => "VARCHAR(100) NULL",
+            'backup_path'    => "TEXT NULL",
+            'backup_retention' => "INT DEFAULT 7",
+            'backup_host'    => "VARCHAR(255) NULL",
+            'backup_user'    => "VARCHAR(100) NULL",
+            'backup_pass'    => "VARCHAR(100) NULL"
         ];
 
         foreach ($columns as $column => $definition) {
@@ -72,7 +77,12 @@ final class PlatformController
                 logo = ?,
                 whatsapp = ?,
                 instagram = ?,
-                versao_sistema = ?
+                versao_sistema = ?,
+                backup_path = ?,
+                backup_retention = ?,
+                backup_host = ?,
+                backup_user = ?,
+                backup_pass = ?
              WHERE id = ?",
             [
                 $dados['nome_empresa'] ?? '',
@@ -86,6 +96,11 @@ final class PlatformController
                 $dados['whatsapp']     ?? null,
                 $dados['instagram']    ?? null,
                 $dados['versao_sistema'] ?? null,
+                $dados['backup_path']    ?? null,
+                (int)($dados['backup_retention'] ?? 7),
+                $dados['backup_host']    ?? null,
+                $dados['backup_user']    ?? null,
+                $dados['backup_pass']    ?? null,
                 $id
             ]
         );

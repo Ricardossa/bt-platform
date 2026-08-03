@@ -42,7 +42,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'site'           => trim($_POST['site'] ?? ''),
         'versao_sistema' => trim($_POST['versao_sistema'] ?? ''),
         'tema'           => $_POST['tema'] ?? 'blue',
-        'logo'           => $logo
+        'logo'           => $logo,
+        'backup_path'    => trim($_POST['backup_path'] ?? ''),
+        'backup_retention' => (int)($_POST['backup_retention'] ?? 7)
     ]);
 
     header('Location: platform.php?ok=1');
@@ -141,6 +143,33 @@ require_once __DIR__ . '/includes/header.php';
             <?php endif; ?>
         </div>
     </div>
+
+    <h3 style="margin:30px 0 15px; font-size:16px; color:var(--secondary);">🛡️ Backup e Segurança (Master -> TrueNAS)</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="form-group">
+            <label>Endereço IP / Host do TrueNAS</label>
+            <input type="text" name="backup_host" class="form-control" placeholder="192.168.100.250" value="<?= htmlspecialchars($platformDados['backup_host'] ?? '') ?>">
+        </div>
+        <div class="form-group">
+            <label>Caminho da Pasta (Share)</label>
+            <input type="text" name="backup_path" class="form-control" placeholder="//192.168.100.250/backups" value="<?= htmlspecialchars($platformDados['backup_path'] ?? '') ?>">
+        </div>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top:15px;">
+        <div class="form-group">
+            <label>Usuário de Rede</label>
+            <input type="text" name="backup_user" class="form-control" value="<?= htmlspecialchars($platformDados['backup_user'] ?? '') ?>">
+        </div>
+        <div class="form-group">
+            <label>Senha de Rede</label>
+            <input type="password" name="backup_pass" class="form-control" value="<?= htmlspecialchars($platformDados['backup_pass'] ?? '') ?>">
+        </div>
+        <div class="form-group">
+            <label>Retenção (Dias)</label>
+            <input type="number" name="backup_retention" class="form-control" value="<?= (int)($platformDados['backup_retention'] ?? 7) ?>" min="1" max="30">
+        </div>
+    </div>
+    <small style="color:var(--text2); display:block; margin-top:10px;">O sistema tentará montar este diretório automaticamente no caminho <code>/mnt/truenas/backups/BKP-MASTER</code> antes de cada backup.</small>
 
     <div style="margin-top:35px; border-top:1px solid var(--border); padding-top:25px;">
         <button type="submit" class="bt-button bt-primary" style="padding: 15px 40px;">
