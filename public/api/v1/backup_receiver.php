@@ -26,26 +26,35 @@ if (empty($uuid) || empty($token)) {
     exit;
 }
 
-// 1. Validação de Segurança
-$instalacao = Database::fetch("SELECT id FROM instalacoes WHERE uuid = ? AND token = ? LIMIT 1", [$uuid, $token]);
+// 1. Validação de Segurança e Identificação Humana
+$instalacao = Database::fetch("
+    SELECT i.id, i.nome as unidade_nome, e.nome_fantasia as empresa_nome
+    FROM instalacoes i
+    JOIN empresas e ON e.id = i.empresa_id
+    WHERE i.uuid = ? AND i.token = ? LIMIT 1
+", [$uuid, $token]);
+
 if (!$instalacao) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Acesso negado: Identidade inválida.']);
     exit;
 }
 
-// 2. Processamento do Arquivo
+// 2. Organização de Pastas Inteligente
+$empresaSlug = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '_', (string)$instalacao['empresa_nome']));
+$unidadeSlug = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '_', (string)$instalacao['unidade_nome']));
+
+$storageDir = BT_ROOT . "/storage/backups/{$empresaSlug}/{$unidadeSlug}/";
+if (!is_dir($storageDir)) {
+    mkdir($storageDir, 0775, true);
+}
+
+// 3. Processamento do Arquivo
 if (!isset($_FILES['backup']) || $_FILES['backup']['error'] !== UPLOAD_ERR_OK) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Arquivo de backup não recebido corretamente.']);
     exit;
 }
-
-$storageDir = BT_ROOT . '/storage/backups/' . $uuid . '/';
-if (!is_dir($storageDir)) {
-    mkdir($storageDir, 0775, true);
-}
-
 $filename = date('Ymd_His') . '_banco.zip';
 $targetPath = $storageDir . $filename;
 

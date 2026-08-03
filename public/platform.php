@@ -44,7 +44,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'tema'           => $_POST['tema'] ?? 'blue',
         'logo'           => $logo,
         'backup_path'    => trim($_POST['backup_path'] ?? ''),
-        'backup_retention' => (int)($_POST['backup_retention'] ?? 7)
+        'backup_retention' => (int)($_POST['backup_retention'] ?? 7),
+        'backup_host'    => trim($_POST['backup_host'] ?? ''),
+        'backup_user'    => trim($_POST['backup_user'] ?? ''),
+        'backup_pass'    => $_POST['backup_pass'] ?? ''
     ]);
 
     header('Location: platform.php?ok=1');
