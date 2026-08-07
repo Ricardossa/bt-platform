@@ -137,6 +137,9 @@ Selecione...
         <option value="BT1_COLETOR_PRO" <?= ($instalacao && $instalacao['produto'] === 'BT1_COLETOR_PRO') ? 'selected' : '' ?>>
             📱 BT1 Coletor Pro
         </option>
+        <option value="BT_PRINT" <?= ($instalacao && $instalacao['produto'] === 'BT_PRINT') ? 'selected' : '' ?>>
+            🖨️ BT Print Server
+        </option>
     </select>
 </div>
 

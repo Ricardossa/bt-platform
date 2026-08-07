@@ -148,13 +148,13 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 
     <h3 style="margin:30px 0 15px; font-size:16px; color:var(--secondary);">🛡️ Backup e Segurança (Master -> TrueNAS)</h3>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
         <div class="form-group">
-            <label>Endereço IP / Host do TrueNAS</label>
+            <label>IP do Servidor TrueNAS</label>
             <input type="text" name="backup_host" class="form-control" placeholder="192.168.100.250" value="<?= htmlspecialchars($platformDados['backup_host'] ?? '') ?>">
         </div>
         <div class="form-group">
-            <label>Caminho da Pasta (Share)</label>
+            <label>Caminho de Rede (SMB Share)</label>
             <input type="text" name="backup_path" class="form-control" placeholder="//192.168.100.250/backups" value="<?= htmlspecialchars($platformDados['backup_path'] ?? '') ?>">
         </div>
     </div>
@@ -174,13 +174,35 @@ require_once __DIR__ . '/includes/header.php';
     </div>
     <small style="color:var(--text2); display:block; margin-top:10px;">O sistema tentará montar este diretório automaticamente no caminho <code>/mnt/truenas/backups/BKP-MASTER</code> antes de cada backup.</small>
 
-    <div style="margin-top:35px; border-top:1px solid var(--border); padding-top:25px;">
+    <div style="margin-top:35px; border-top:1px solid var(--border); padding-top:25px; display: flex; justify-content: space-between;">
         <button type="submit" class="bt-button bt-primary" style="padding: 15px 40px;">
             💾 Salvar Configurações
+        </button>
+        <button type="button" id="btnTestarBackup" class="bt-button" style="background: var(--sidebar); border: 1px solid var(--border); padding: 15px 30px;">
+            📡 Testar Conexão TrueNAS
         </button>
     </div>
 
 </form>
+
+<script>
+document.getElementById('btnTestarBackup').addEventListener('click', async () => {
+    const btn = document.getElementById('btnTestarBackup');
+    btn.innerHTML = '⌛ Testando...';
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('api/v1/test_backup_mount.php');
+        const json = await res.json();
+        alert(json.message + (json.output ? "\n\nLog: " + json.output : ""));
+    } catch(e) {
+        alert("Erro ao disparar teste.");
+    } finally {
+        btn.innerHTML = '📡 Testar Conexão TrueNAS';
+        btn.disabled = false;
+    }
+});
+</script>
 
 </section>
 

@@ -17,35 +17,40 @@ final class LicenseFeatureService
                 'voice_enabled' => false,
                 'custom_branding' => false,
                 'reports' => 'NONE',
-                'omnichannel' => false
+                'multi_ticket' => false,
+                'hybrid_scheduling' => false
             ],
             'ENTERPRISE' => [
-                'max_devices' => 6,
+                'max_devices' => 10,
                 'voice_enabled' => true,
                 'custom_branding' => false,
                 'reports' => 'BASIC',
-                'omnichannel' => false
+                'multi_ticket' => true,
+                'hybrid_scheduling' => false
             ],
             'PRO' => [
-                'max_devices' => 15,
+                'max_devices' => 25,
                 'voice_enabled' => true,
                 'custom_branding' => true,
                 'reports' => 'ADVANCED',
-                'omnichannel' => true
+                'multi_ticket' => true,
+                'hybrid_scheduling' => true
             ],
             'PREMIUM' => [
                 'max_devices' => 999,
                 'voice_enabled' => true,
                 'custom_branding' => true,
                 'reports' => 'FULL',
-                'omnichannel' => true
+                'multi_ticket' => true,
+                'hybrid_scheduling' => true
             ],
             default => [
                 'max_devices' => 1,
                 'voice_enabled' => false,
                 'custom_branding' => false,
                 'reports' => 'NONE',
-                'omnichannel' => false
+                'multi_ticket' => false,
+                'hybrid_scheduling' => false
             ]
         };
     }

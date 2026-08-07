@@ -35,8 +35,15 @@ final class ActivationController
                 throw new Exception("Código inválido ou expirado.");
             }
 
-            // Opcional: Invalida o código após o primeiro uso
-            // Database::execute("UPDATE instalacoes SET codigo_ativacao = NULL WHERE codigo_ativacao = ?", [$codigo]);
+            // --- INTELIGÊNCIA MASTER: Marcar como ativado e limpar PIN ---
+            Database::execute(
+                "UPDATE instalacoes
+                 SET codigo_ativacao = NULL,
+                     status = 'ONLINE',
+                     ultima_sincronizacao = NOW()
+                 WHERE codigo_ativacao = ?",
+                [$codigo]
+            );
 
             JsonResponse::success([
                 'uuid' => $instalacao['uuid'],

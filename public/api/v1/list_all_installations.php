@@ -1,13 +1,9 @@
 <?php
 require_once __DIR__ . '/../../../bootstrap/app.php';
 use BT\Core\Database\Database;
-
-header('Content-Type: text/plain');
-
+header('Content-Type: application/json');
 try {
-    echo "--- TODAS AS INSTALAÇÕES NA MASTER ---\n";
-    $insts = Database::fetchAll("SELECT id, nome, uuid FROM instalacoes ORDER BY id DESC");
-    print_r($insts);
-} catch (Exception $e) {
-    echo "Erro: " . $e->getMessage();
-}
+    $rows = Database::fetchAll("SELECT i.*, e.nome_fantasia FROM instalacoes i JOIN empresas e ON e.id = i.empresa_id");
+    echo json_encode(['success' => true, 'data' => $rows]);
+} catch (Exception $e) { echo json_encode(['success' => false, 'message' => $e->getMessage()]); }
+?>
