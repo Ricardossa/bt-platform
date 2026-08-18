@@ -16,26 +16,35 @@ if (isset($_GET['delete'])) {
     exit;
 }
 
-$unidades = Database::fetchAll("
-    SELECT
-        i.id,
-        e.nome_fantasia as empresa,
-        i.nome as unidade,
-        i.uuid,
-        i.produto,
-        i.versao,
-        i.status as config_status,
-        i.ultima_sincronizacao,
-        i.codigo_ativacao as pin,
-        l.status as status_licenca,
-        t.slug,
-        (SELECT COUNT(*) FROM dispositivos d WHERE d.instalacao_id = i.id AND d.ativo = 1) as total_dispositivos
-    FROM instalacoes i
-    LEFT JOIN empresas e ON e.id = i.empresa_id
-    LEFT JOIN licencas l ON l.instalacao_id = i.id
-    LEFT JOIN tenants t ON t.id = i.id
-    ORDER BY i.ultima_sincronizacao DESC, i.id DESC
-");
+// [LITE v3.2.6] Lógica de Monitoramento Blindada (Anti-Crash)
+try {
+    $unidades = Database::fetchAll("
+        SELECT
+            i.id,
+            e.nome_fantasia as empresa,
+            i.nome as unidade,
+            i.uuid,
+            i.token,
+            i.produto,
+            i.versao,
+            i.status as config_status,
+            i.ultima_sincronizacao,
+            i.codigo_ativacao as pin,
+            l.status as status_licenca,
+            (SELECT COUNT(*) FROM dispositivos d WHERE d.instalacao_id = i.id AND d.ativo = 1) as total_dispositivos
+        FROM instalacoes i
+        LEFT JOIN empresas e ON e.id = i.empresa_id
+        LEFT JOIN licencas l ON l.instalacao_id = i.id
+        ORDER BY i.ultima_sincronizacao DESC, i.id DESC
+    ");
+} catch (\Throwable $e) {
+    // Fallback para query básica se colunas novas faltarem
+    $unidades = Database::fetchAll("
+        SELECT i.*, e.nome_fantasia as empresa, 0 as total_dispositivos, 'UNKNOWN' as status_licenca
+        FROM instalacoes i
+        LEFT JOIN empresas e ON e.id = i.empresa_id
+    ");
+}
 
 require_once __DIR__ . '/includes/header.php';
 
@@ -77,15 +86,15 @@ function getRealStatus(?string $lastSync): string {
                     $statusColor = ($realStatus === 'ONLINE') ? 'var(--success)' : 'var(--text3)';
                 ?>
                 <tr>
-                    <td style="padding: 20px 10px;">
-                        <b style="font-size:15px; color:#fff;"><?= htmlspecialchars($u['empresa'] ?? 'N/A') ?></b><br>
+                    <td>
+                        <b><?= htmlspecialchars($u['empresa'] ?? 'N/A') ?></b><br>
                         <span style="color:var(--secondary); font-weight:bold; font-size:12px;"><?= htmlspecialchars($u['unidade']) ?></span>
                     </td>
                     <td>
                         <div style="font-size:10px; color:var(--text2); font-family:monospace; line-height:1.4;">
                             UUID: <?= substr($u['uuid'], 0, 20) ?>...<br>
-                            Produto: <b style="color:#fff;"><?= $u['produto'] ?></b><br>
-                            <?php if($u['slug']): ?>
+                            Produto: <b style="color:#fff;"><?= $u['produto'] ?? 'N/A' ?></b><br>
+                            <?php if(isset($u['slug']) && $u['slug']): ?>
                                 URL: <a href="http://<?= $u['slug'] ?>.brandaotech.com.br" target="_blank" style="color:var(--secondary)"><?= $u['slug'] ?>.brandaotech...</a>
                             <?php endif; ?>
                         </div>
@@ -93,17 +102,19 @@ function getRealStatus(?string $lastSync): string {
                     <td><span class="badge" style="background:rgba(255,255,255,0.05); color:#fff;">v<?= $u['versao'] ?></span></td>
                     <td>
                         <div style="display:flex; align-items:center; gap:8px;">
+                            <?php $realStatus = getRealStatus($u['ultima_sincronizacao'] ?? null); ?>
+                            <?php $statusColor = ($realStatus === 'ONLINE') ? 'var(--success)' : 'var(--text3)'; ?>
                             <div style="width:8px; height:8px; border-radius:50%; background:<?= $statusColor ?>; box-shadow: 0 0 10px <?= $statusColor ?>;"></div>
                             <b style="color:<?= $statusColor ?>; font-size:12px;"><?= $realStatus ?></b>
                         </div>
-                        <small style="font-size:9px; color:var(--text3);">Sinc: <?= $u['ultima_sincronizacao'] ? date('d/m H:i', strtotime($u['ultima_sincronizacao'])) : 'Nunca' ?></small>
+                        <small style="font-size:9px; color:var(--text3);">Sinc: <?= ($u['ultima_sincronizacao'] ?? null) ? date('d/m H:i', strtotime($u['ultima_sincronizacao'])) : 'Nunca' ?></small>
                     </td>
                     <td align="center">
-                        <div style="font-size:22px; font-weight:900; color:var(--secondary);"><?= $u['total_dispositivos'] ?></div>
+                        <div style="font-size:22px; font-weight:900; color:var(--secondary);"><?= $u['total_dispositivos'] ?? 0 ?></div>
                     </td>
                     <td>
                         <div style="display:flex; gap:8px;">
-                            <button onclick="alert('PIN de Ativação: <?= $u['pin'] ?>')" class="bt-button" title="Ver PIN" style="padding:5px 10px; background:#F5A623; color:#000;">
+                            <button onclick="alert('PIN de Ativação: <?= $u['pin'] ?? 'N/A' ?>')" class="bt-button" title="Ver PIN" style="padding:5px 10px; background:#F5A623; color:#000;">
                                 <i class="fa-solid fa-key"></i>
                             </button>
                             <a href="instalacao.php?id=<?= $u['id'] ?>" class="bt-button" title="Editar" style="padding:5px 10px;">
