@@ -135,6 +135,24 @@ require_once __DIR__ . '/includes/header.php';
     </section>
     <?php endif; ?>
 
+    <!-- 🧠 ASSISTENTE NOC DIAMOND (v6.8 AI) -->
+    <section class="noc-card" style="margin-bottom: 30px; border-left: 6px solid var(--secondary); background: rgba(29, 180, 255, 0.05);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="margin:0; font-size:16px; color:var(--secondary); font-weight:bold;"><i class="fa-solid fa-user-shield"></i> BRIEFING DO COMANDANTE (IA)</h2>
+            <button id="btnAiBriefing" class="bt-button bt-primary" style="font-size:11px; padding:6px 15px;">
+                <i class="fa-solid fa-bolt"></i> GERAR RELATÓRIO ESTRATÉGICO
+            </button>
+        </div>
+
+        <div id="ai-loading" class="hidden" style="padding: 20px; text-align: center;">
+            <i class="fa-solid fa-circle-notch fa-spin" style="color:var(--secondary);"></i>
+            <span style="margin-left:10px; color:var(--text2); font-size:13px;">Consultando sinais vitais do império no Xeon...</span>
+        </div>
+
+        <div id="ai-briefing-content" class="hidden animate__animated animate__fadeIn" style="margin-top:20px; padding:20px; background:var(--sidebar); border-radius:10px; border:1px solid var(--border); color:#fff; line-height:1.6; font-size:14px; white-space:pre-wrap;">
+        </div>
+    </section>
+
     <div class="bt-grid">
 
         <div style="display:flex; flex-direction:column; gap:25px;">
@@ -243,6 +261,36 @@ require_once __DIR__ . '/includes/header.php';
         const now = new Date();
         document.getElementById('clock').innerText = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
     }, 1000);
+
+    // --- LÓGICA DO ASSISTENTE AI NOC ---
+    const btnAi = document.getElementById('btnAiBriefing');
+    const aiLoading = document.getElementById('ai-loading');
+    const aiContent = document.getElementById('ai-briefing-content');
+
+    if (btnAi) {
+        btnAi.addEventListener('click', async () => {
+            btnAi.disabled = true;
+            aiLoading.classList.remove('hidden');
+            aiContent.classList.add('hidden');
+
+            try {
+                const res = await fetch('api/v1/master_ai_briefing.php');
+                const json = await res.json();
+
+                if (json.success) {
+                    aiContent.innerText = json.briefing;
+                    aiContent.classList.remove('hidden');
+                } else {
+                    alert(json.message || "O Comandante está ocupado.");
+                }
+            } catch (e) {
+                alert("Erro ao conectar com a Central de Inteligência.");
+            } finally {
+                aiLoading.classList.add('hidden');
+                btnAi.disabled = false;
+            }
+        });
+    }
 </script>
 
 <?php

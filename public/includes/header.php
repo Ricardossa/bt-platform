@@ -42,8 +42,8 @@ $pageTitle = $pageTitle ?? $empresa;
                 src="<?= htmlspecialchars($logoUrl) ?>"
                 alt="<?= htmlspecialchars($empresa) ?>"
                 style="
-                    max-width:180px;
-                    max-height:80px;
+                    width:60px;
+                    height:60px;
                     object-fit:contain;
                 ">
 
@@ -86,9 +86,9 @@ $pageTitle = $pageTitle ?? $empresa;
             Empresas
         </a>
 
-        <a href="instalacoes.php">
-            <i class="fa-solid fa-server"></i>
-            Instalações
+        <a href="unidades.php" style="background:rgba(29, 180, 255, 0.1); border-radius:10px; margin-top:5px;">
+            <i class="fa-solid fa-server" style="color:var(--secondary);"></i>
+            Unidades SaaS
         </a>
 
         <a href="licencas.php">
@@ -99,21 +99,6 @@ $pageTitle = $pageTitle ?? $empresa;
         <a href="financeiro.php">
             <i class="fa-solid fa-sack-dollar"></i>
             Financeiro
-        </a>
-
-        <a href="updates.php">
-            <i class="fa-solid fa-rocket"></i>
-            Updates OTA
-        </a>
-
-        <a href="gerador_pacote.php">
-            <i class="fa-solid fa-box-archive"></i>
-            Gerador de Pacotes
-        </a>
-
-        <a href="downloads.php">
-            <i class="fa-solid fa-mobile-screen-button"></i>
-            Downloads APK
         </a>
 
     </nav>

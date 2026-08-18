@@ -13,39 +13,65 @@ final class InstallationProvisioningService
     {
         $contexto = $this->gerarIdentificadores();
 
-        $instalacaoId = $this->criarInstalacao(
-            $dados,
-            $contexto
-        );
+        // [SaaS v3.2.0] Transação Atômica para Unidade + Tenant
+        Database::beginTransaction();
 
-        if ($instalacaoId <= 0) {
+        try {
+            $instalacaoId = $this->criarInstalacao(
+                $dados,
+                $contexto
+            );
+
+            if ($instalacaoId <= 0) {
+                throw new \Exception('Falha ao criar instalação no banco central.');
+            }
+
+            // [SaaS v3.2.0] Cria o Registro de Tenant (Subdomínio)
+            $this->criarTenant($instalacaoId, $dados, $contexto);
+
+            $licencaService = new LicencaService();
+
+            $ok = $licencaService->criar([
+                'instalacao_id'    => $instalacaoId,
+                'tipo'             => $dados['tipo'] ?? 'ENTERPRISE',
+                'status'           => 'ATIVA',
+                'data_ativacao'    => date('Y-m-d'),
+                'data_validade'    => date('Y-m-d', strtotime('+1 year')),
+                'ultima_validacao' => null
+            ]);
+
+            if (!$ok) {
+                throw new \Exception('Falha ao criar licença.');
+            }
+
+            Database::commit();
+
+            return $this->retornarContexto(
+                $instalacaoId,
+                $contexto
+            );
+
+        } catch (\Throwable $e) {
+            Database::rollBack();
             return [
                 'success' => false,
-                'message' => 'Falha ao criar instalação.'
+                'message' => $e->getMessage()
             ];
         }
+    }
 
-        $licencaService = new LicencaService();
+    private function criarTenant(int $id, array $dados, array $contexto): void
+    {
+        $slug = $dados['slug'] ?? strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $dados['nome']));
 
-        $ok = $licencaService->criar([
-            'instalacao_id'    => $instalacaoId,
-            'tipo'             => $dados['tipo'] ?? 'ENTERPRISE',
-            'status'           => 'ATIVA',
-            'data_ativacao'    => date('Y-m-d'),
-            'data_validade'    => date('Y-m-d', strtotime('+1 year')),
-            'ultima_validacao' => null
-        ]);
-
-        if (!$ok) {
-            return [
-                'success' => false,
-                'message' => 'Falha ao criar licença.'
-            ];
-        }
-
-        return $this->retornarContexto(
-            $instalacaoId,
-            $contexto
+        Database::execute(
+            "INSERT INTO tenants (id, uuid, slug, nome, status) VALUES (?, ?, ?, ?, 'ATIVO')",
+            [
+                $id,
+                $contexto['uuid'],
+                $slug,
+                $dados['nome']
+            ]
         );
     }
 

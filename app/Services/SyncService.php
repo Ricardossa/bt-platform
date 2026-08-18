@@ -119,48 +119,44 @@ final class SyncService
 
     public function sync(Request $request): array
     {
-
-        $uuid = (string) $request->input('uuid');
+        // [LITE v3.1.5] Identifica o Tenant pelo Header (Multi-Tenant SaaS)
+        $tenantUuid = $request->header('X-BT-TENANT-UUID');
+        $uuid = (string) $request->input('uuid'); // Fallback para ID da instalacao
         $produto = (string) $request->input('produto');
 
         if (empty($produto)) {
-            return [
-                'status' => 'ERROR',
-                'code' => 'PRODUCT_REQUIRED',
-                'message' => 'Campo produto é obrigatório.'
-            ];
+            return ['status' => 'ERROR', 'code' => 'PRODUCT_REQUIRED', 'message' => 'Campo produto é obrigatório.'];
         }
 
-        $instalacao = $this->buscarInstalacao($uuid, $produto);
+        // 1. Prioridade para busca por Tenant (Identidade SaaS)
+        if (!empty($tenantUuid)) {
+            $instalacao = Database::fetch(
+                "SELECT i.*
+                 FROM instalacoes i
+                 JOIN tenants t ON t.id = i.id
+                 WHERE t.uuid = ? AND i.produto = ?",
+                [$tenantUuid, $produto]
+            );
+        } else {
+            $instalacao = $this->buscarInstalacao($uuid, $produto);
+        }
 
         if ($instalacao === null) {
-
             return [
-
                 'status' => 'ERROR',
-
                 'code' => 'INSTALLATION_NOT_FOUND',
-
                 'message' => 'Instalação não encontrada.'
-
             ];
-
         }
 
         $token = (string) $request->input('token');
 
         if (!$this->validarToken($instalacao, $token)) {
-
             return [
-
                 'status' => 'ERROR',
-
                 'code' => 'INVALID_TOKEN',
-
                 'message' => 'Token inválido.'
-
             ];
-
         }
 
         $licenca = $this->buscarLicenca(
@@ -175,27 +171,14 @@ final class SyncService
             ];
         }
 
-        $erroLicenca = $this->validarLicenca($licenca);
-
-        // --- UNIFICAÇÃO DE BLOQUEIO (APK & ENTERPRISE) ---
-        // Retornamos OK para que ambos consigam ler o status da licença e agir localmente.
-        // O bloqueio acontece pela leitura do campo sync.license.status
-
-        // ==========================================
-        // 5. RECURSOS E LIMITES (FEATURE FLAGS)
-        // ==========================================
         $features = $this->featureService->getFeatures($licenca['tipo']);
 
-        // ==========================================
-        // 6. REGISTRA OU ATUALIZA DISPOSITIVO
-        // ==========================================
         $deviceUuid = (string) $request->input('device_uuid');
         $dispositivoExistente = $this->deviceService->buscarPorInstalacaoEId(
             (int) $instalacao['id'],
             $deviceUuid
         );
 
-        // Se for um novo dispositivo, valida o limite do plano
         if ($dispositivoExistente === null) {
             $totalAtivos = $this->deviceService->contarAtivos((int) $instalacao['id']);
 
@@ -227,33 +210,6 @@ final class SyncService
             ];
         }
 
-        // ==========================================
-        // 7. VERIFICA ATUALIZAÇÕES (OTA)
-        // ==========================================
-        $updateData = ['available' => false];
-        $updateController = new \BT\App\Updates\UpdateController();
-        $latestUpdate = $updateController->getLatest($produto);
-
-        if ($latestUpdate) {
-            $currentVer = (string) $request->input('versao', '0.0.0');
-            // Remove 'v' ou outros prefixos para comparar
-            $currentVerClean = ltrim(strtolower($currentVer), 'v');
-            $latestVerClean = ltrim(strtolower($latestUpdate['versao']), 'v');
-
-            if (version_compare($latestVerClean, $currentVerClean, '>')) {
-                $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https" : "http";
-                $apkUrl = "$protocol://{$_SERVER['HTTP_HOST']}/api/v1/updates_download.php?id=" . (int)$latestUpdate['id'];
-
-                $updateData = [
-                    'available' => true,
-                    'versionName' => $latestUpdate['versao'],
-                    'apkUrl' => $apkUrl,
-                    'mandatory' => (bool)$latestUpdate['is_mandatory'],
-                    'changelog' => $latestUpdate['changelog']
-                ];
-            }
-        }
-
         $this->atualizarPresenca(
             (int) $instalacao['id'],
             $request
@@ -279,7 +235,9 @@ final class SyncService
                     'expires' => $licenca['data_validade']
                 ],
                 'features' => $features,
-                'update' => $updateData,
+                'update' => [
+                    'available' => false
+                ],
                 'configuration' => [
                     'changed' => false
                 ],

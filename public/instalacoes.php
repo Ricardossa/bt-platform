@@ -74,6 +74,11 @@ require_once __DIR__ . '/includes/header.php';
                     <td>
                         <div style="font-size:11px; color:var(--text2); font-family:monospace;">UUID: <?= substr($item['uuid'], 0, 18) ?>...</div>
                         <div style="font-size:11px; color:var(--secondary);">Produto: <?= htmlspecialchars($item['produto']) ?></div>
+                        <?php if ($item['ip_local']): ?>
+                            <div style="font-size:10px; color:#18C964; margin-top:2px;">
+                                <i class="fa-solid fa-network-wired"></i> Local: <?= $item['ip_local'] ?>
+                            </div>
+                        <?php endif; ?>
                         <?php if ($item['codigo_ativacao']): ?>
                             <div style="margin-top:5px; font-size:11px; color:#f5a524; font-weight:bold;">
                                 🔑 Ativação: <span style="background:rgba(245,165,36,0.1); padding:1px 5px; border-radius:3px;"><?= $item['codigo_ativacao'] ?></span>
@@ -106,6 +111,9 @@ require_once __DIR__ . '/includes/header.php';
                         <div style="display:flex; gap:10px; justify-content:flex-end;">
                             <a href="instalacoes.php?generate_pin=<?= $item['id'] ?>" class="bt-button" style="padding: 8px 15px; font-size:13px; background:#f5a524; color:#fff;" title="Gerar novo PIN de ativação">🔑 PIN</a>
                             <a href="instalacao.php?id=<?= $item['id'] ?>" class="bt-button" style="padding: 8px 15px; font-size:13px;">✏️ Editar</a>
+                            <button onclick="gerarConfigMobile('<?= $item['uuid'] ?>', '<?= htmlspecialchars($item['nome']) ?>')" class="bt-button" style="padding: 8px 15px; font-size:13px; background:var(--secondary); color:#fff;" title="Configuração Rápida Mobile">
+                                <i class="fa-solid fa-mobile-screen"></i> APP
+                            </button>
                             <a href="instalacoes.php?delete=<?= $item['id'] ?>" class="bt-button" style="padding: 8px 15px; font-size:13px; color:var(--danger);" onclick="return confirm('Excluir instalação?')">🗑️</a>
                         </div>
                     </td>
@@ -115,6 +123,52 @@ require_once __DIR__ . '/includes/header.php';
         </table>
     </section>
 
+    <!-- MODAL DE CONFIGURAÇÃO MOBILE (DIAMOND) -->
+    <div id="modalMobile" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; align-items:center; justify-content:center;">
+        <div class="bt-card" style="max-width:400px; width:90%; text-align:center; padding:30px; position:relative;">
+            <button onclick="document.getElementById('modalMobile').style.display='none'" style="position:absolute; top:10px; right:15px; background:none; border:none; color:#888; font-size:20px; cursor:pointer;">&times;</button>
+            <h3 id="modalTitle" style="margin-bottom:10px;">Configurar App</h3>
+            <p style="font-size:12px; color:var(--text2); margin-bottom:20px;">Abra o App BT Barber e escaneie o código abaixo para configurar esta unidade automaticamente.</p>
+
+            <div id="qrcodeMobile" style="background:#fff; padding:15px; border-radius:10px; display:inline-block; margin-bottom:20px;"></div>
+
+            <div style="background:var(--sidebar); padding:10px; border-radius:8px; font-size:11px; color:var(--secondary); font-family:monospace; margin-bottom:20px;" id="modalUUID"></div>
+
+            <button onclick="document.getElementById('modalMobile').style.display='none'" class="bt-button bt-primary" style="width:100%;">ENTENDI</button>
+        </div>
+    </div>
+
 </main>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script>
+function gerarConfigMobile(uuid, nome) {
+    const modal = document.getElementById('modalMobile');
+    const qrDiv = document.getElementById('qrcodeMobile');
+    const title = document.getElementById('modalTitle');
+    const uuidDiv = document.getElementById('modalUUID');
+
+    title.innerText = "Configurar App: " + nome;
+    uuidDiv.innerText = "UUID: " + uuid;
+
+    // Dados do QR Code: Protocolo 2 (Configuração Automática)
+    const configData = JSON.stringify({
+        protocol: 2,
+        action: 'CONFIGURE_UNIT',
+        uuid: uuid,
+        master: window.location.origin
+    });
+
+    try {
+        const qr = qrcode(0, 'M');
+        qr.addData(configData);
+        qr.make();
+        qrDiv.innerHTML = qr.createImgTag(6);
+        modal.style.display = 'flex';
+    } catch (e) {
+        alert("Erro ao gerar QR Code: " + e.message);
+    }
+}
+</script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
