@@ -27,20 +27,37 @@ try {
             i.token,
             i.produto,
             i.versao,
-            i.status as config_status,
+            i.status as status_instalacao,
             i.ultima_sincronizacao,
             i.codigo_ativacao as pin,
-            l.status as status_licenca,
+            (SELECT status FROM licencas WHERE instalacao_id = i.id ORDER BY id DESC LIMIT 1) as status_licenca,
+            (SELECT slug FROM tenants WHERE id = i.id LIMIT 1) as tenant_slug,
             (SELECT COUNT(*) FROM dispositivos d WHERE d.instalacao_id = i.id AND d.ativo = 1) as total_dispositivos
         FROM instalacoes i
         LEFT JOIN empresas e ON e.id = i.empresa_id
-        LEFT JOIN licencas l ON l.instalacao_id = i.id
         ORDER BY i.ultima_sincronizacao DESC, i.id DESC
     ");
 } catch (\Throwable $e) {
+    // Debug Error
+    if (isset($_GET['debug_query'])) {
+        echo "<pre>QUERY ERROR: " . htmlspecialchars($e->getMessage()) . "</pre>";
+    }
+
     // Fallback para query básica se colunas novas faltarem
     $unidades = Database::fetchAll("
-        SELECT i.*, e.nome_fantasia as empresa, 0 as total_dispositivos, 'UNKNOWN' as status_licenca
+        SELECT
+            i.id,
+            i.nome as unidade,
+            i.uuid,
+            i.token,
+            i.produto,
+            i.versao,
+            i.ultima_sincronizacao,
+            e.nome_fantasia as empresa,
+            0 as total_dispositivos,
+            'UNKNOWN' as status_licenca,
+            '' as tenant_slug,
+            '' as pin
         FROM instalacoes i
         LEFT JOIN empresas e ON e.id = i.empresa_id
     ");
@@ -94,8 +111,8 @@ function getRealStatus(?string $lastSync): string {
                         <div style="font-size:10px; color:var(--text2); font-family:monospace; line-height:1.4;">
                             UUID: <?= substr($u['uuid'], 0, 20) ?>...<br>
                             Produto: <b style="color:#fff;"><?= $u['produto'] ?? 'N/A' ?></b><br>
-                            <?php if(isset($u['slug']) && $u['slug']): ?>
-                                URL: <a href="http://<?= $u['slug'] ?>.brandaotech.com.br" target="_blank" style="color:var(--secondary)"><?= $u['slug'] ?>.brandaotech...</a>
+                            <?php if(isset($u['tenant_slug']) && $u['tenant_slug']): ?>
+                                URL: <a href="http://<?= $u['tenant_slug'] ?>.brandaotech.com.br" target="_blank" style="color:var(--secondary)"><?= $u['tenant_slug'] ?>.brandaotech...</a>
                             <?php endif; ?>
                         </div>
                     </td>

@@ -21,7 +21,10 @@ spl_autoload_register(function (string $class): void {
 
     $parts = explode('\\', $relative);
     
-    $parts[0] = strtolower($parts[0]);
+    // Converte a primeira parte (App/Core) para minúsculo para bater com as pastas físicas
+    if (isset($parts[0])) {
+        $parts[0] = strtolower($parts[0]);
+    }
 
     $file = BT_ROOT . '/'
         . implode('/', $parts)

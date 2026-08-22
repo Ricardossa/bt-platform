@@ -103,11 +103,16 @@
 
 }
 
-.sidebar nav a:hover{
-
-    background:var(--primary);
-
+.sidebar nav a:hover,
+.sidebar nav a.active {
+    background: var(--primary);
+    color: #fff;
 }
+
+.sidebar nav a.active i {
+    color: var(--secondary);
+}
+
 
 .content{
 

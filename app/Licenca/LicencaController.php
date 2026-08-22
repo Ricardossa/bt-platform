@@ -18,9 +18,9 @@ final class LicencaController
                 i.nome AS instalacao,
                 e.nome_fantasia AS empresa
              FROM licencas l
-             INNER JOIN instalacoes i
+             LEFT JOIN instalacoes i
                  ON i.id = l.instalacao_id
-             INNER JOIN empresas e
+             LEFT JOIN empresas e
                  ON e.id = i.empresa_id
              ORDER BY e.nome_fantasia, i.nome"
         );
@@ -34,9 +34,9 @@ final class LicencaController
                 i.nome AS instalacao,
                 e.nome_fantasia AS empresa
              FROM licencas l
-             INNER JOIN instalacoes i
+             LEFT JOIN instalacoes i
                  ON i.id = l.instalacao_id
-             INNER JOIN empresas e
+             LEFT JOIN empresas e
                  ON e.id = i.empresa_id
              WHERE l.id = ?",
             [$id]

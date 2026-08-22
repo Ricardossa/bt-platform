@@ -47,18 +47,6 @@ final class SyncService
         );
     }
 
-    private function buscarLicenca(
-        int $instalacaoId
-    ): ?array
-    {
-        return Database::fetch(
-            "SELECT *
-             FROM licencas
-             WHERE instalacao_id = ?",
-            [$instalacaoId]
-        );
-    }
-
     private function validarLicenca(array $licenca): ?array
     {
         switch ($licenca['status']) {
@@ -119,27 +107,18 @@ final class SyncService
 
     public function sync(Request $request): array
     {
-        // [LITE v3.1.5] Identifica o Tenant pelo Header (Multi-Tenant SaaS)
-        $tenantUuid = $request->header('X-BT-TENANT-UUID');
-        $uuid = (string) $request->input('uuid'); // Fallback para ID da instalacao
+        $uuid = (string) $request->input('uuid');
         $produto = (string) $request->input('produto');
 
+        // [COMPATIBILIDADE] Se o produto não for enviado (versões antigas), assume BT_QUEUE_ENTERPRISE
         if (empty($produto)) {
-            return ['status' => 'ERROR', 'code' => 'PRODUCT_REQUIRED', 'message' => 'Campo produto é obrigatório.'];
+            $produto = 'BT_QUEUE_ENTERPRISE';
         }
 
-        // 1. Prioridade para busca por Tenant (Identidade SaaS)
-        if (!empty($tenantUuid)) {
-            $instalacao = Database::fetch(
-                "SELECT i.*
-                 FROM instalacoes i
-                 JOIN tenants t ON t.id = i.id
-                 WHERE t.uuid = ? AND i.produto = ?",
-                [$tenantUuid, $produto]
-            );
-        } else {
-            $instalacao = $this->buscarInstalacao($uuid, $produto);
-        }
+        $instalacao = $this->buscarInstalacao(
+            $uuid,
+            $produto
+        );
 
         if ($instalacao === null) {
             return [
@@ -159,8 +138,9 @@ final class SyncService
             ];
         }
 
-        $licenca = $this->buscarLicenca(
-            (int) $instalacao['id']
+        $licenca = Database::fetch(
+            "SELECT * FROM licencas WHERE instalacao_id = ?",
+            [(int) $instalacao['id']]
         );
 
         if ($licenca === null) {

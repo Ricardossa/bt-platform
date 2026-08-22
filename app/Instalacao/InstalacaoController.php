@@ -16,7 +16,7 @@ final class InstalacaoController
                 i.*,
                 e.nome_fantasia AS empresa
              FROM instalacoes i
-             INNER JOIN empresas e
+             LEFT JOIN empresas e
                  ON e.id = i.empresa_id
              ORDER BY e.nome_fantasia, i.nome"
         );
@@ -75,12 +75,10 @@ final class InstalacaoController
             "SELECT
                 i.*,
                 e.nome_fantasia AS empresa,
-                COUNT(d.id) AS total_dispositivos,
-                MAX(d.ultima_sincronizacao) AS ultimo_dispositivo
+                (SELECT COUNT(*) FROM dispositivos d WHERE d.instalacao_id = i.id AND d.ativo = 1) AS total_dispositivos,
+                (SELECT MAX(ultima_sincronizacao) FROM dispositivos d WHERE d.instalacao_id = i.id AND d.ativo = 1) AS ultimo_dispositivo
              FROM instalacoes i
-             INNER JOIN empresas e ON e.id = i.empresa_id
-             LEFT JOIN dispositivos d ON d.instalacao_id = i.id AND d.ativo = 1
-             GROUP BY i.id
+             LEFT JOIN empresas e ON e.id = i.empresa_id
              ORDER BY e.nome_fantasia, i.nome"
         );
     }

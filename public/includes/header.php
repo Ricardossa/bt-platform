@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/platform_brand.php';
 
 $pageTitle = $pageTitle ?? $empresa;
+$currentPage = basename($_SERVER['PHP_SELF']);
 
 ?>
 <!DOCTYPE html>
@@ -71,57 +72,62 @@ $pageTitle = $pageTitle ?? $empresa;
 
     <nav>
 
-        <a href="index.php">
+        <a href="index.php" class="<?= $currentPage === 'index.php' ? 'active' : '' ?>">
             <i class="fa-solid fa-house"></i>
             Dashboard
         </a>
 
-        <a href="platform.php">
+        <a href="platform.php" class="<?= $currentPage === 'platform.php' ? 'active' : '' ?>">
             <i class="fa-solid fa-gear"></i>
             Platform
         </a>
 
-        <a href="empresas.php">
+        <a href="empresas.php" class="<?= $currentPage === 'empresas.php' ? 'active' : '' ?>">
             <i class="fa-solid fa-building"></i>
             Empresas
         </a>
 
-        <a href="unidades.php" style="background:rgba(29, 180, 255, 0.1); border-radius:10px; margin-top:5px;">
-            <i class="fa-solid fa-server" style="color:var(--secondary);"></i>
+        <a href="unidades.php" class="<?= $currentPage === 'unidades.php' ? 'active' : '' ?>">
+            <i class="fa-solid fa-server"></i>
             Unidades SaaS
         </a>
 
-        <a href="produtos.php">
+        <a href="instalacoes.php" class="<?= $currentPage === 'instalacoes.php' ? 'active' : '' ?>">
+            <i class="fa-solid fa-microchip"></i>
+            Instalações
+        </a>
+
+        <a href="produtos.php" class="<?= $currentPage === 'produtos.php' ? 'active' : '' ?>">
             <i class="fa-solid fa-boxes-stacked"></i>
             Produtos
         </a>
 
-        <a href="licencas.php">
+        <a href="licencas.php" class="<?= $currentPage === 'licencas.php' ? 'active' : '' ?>">
             <i class="fa-solid fa-key"></i>
             Licenças
         </a>
 
-        <a href="financeiro.php">
+        <a href="financeiro.php" class="<?= $currentPage === 'financeiro.php' ? 'active' : '' ?>">
             <i class="fa-solid fa-sack-dollar"></i>
             Financeiro
         </a>
 
-        <a href="precos.php">
+        <a href="precos.php" class="<?= $currentPage === 'precos.php' ? 'active' : '' ?>">
             <i class="fa-solid fa-tags"></i>
             Tabela de Preços
         </a>
 
-        <a href="updates.php">
+        <a href="updates.php" class="<?= $currentPage === 'updates.php' ? 'active' : '' ?>">
             <i class="fa-solid fa-rocket"></i>
             Updates OTA
         </a>
 
-        <a href="gerador_pacote.php">
+        <a href="gerador_pacote.php" class="<?= $currentPage === 'gerador_pacote.php' ? 'active' : '' ?>">
             <i class="fa-solid fa-box-archive"></i>
             Gerador de Pacotes
         </a>
 
-        <a href="downloads.php">
+        <a href="downloads.php" class="<?= $currentPage === 'downloads.php' ? 'active' : '' ?>">
             <i class="fa-solid fa-mobile-screen-button"></i>
             Downloads APK
         </a>
