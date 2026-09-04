@@ -1,10 +1,28 @@
-# BT Platform - Git Ignore
+# BT Platform - Diamond Standard Ignore
+# --- Folders ---
 /storage/updates/*.zip
+/storage/backups/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
 /public/uploads/*
 !/public/uploads/.gitkeep
 /99_QUARENTENA/
+/04_MOBILE_E_APKS/*.apk
 .idea/
 .vscode/
+
+# --- Files ---
 *.log
+*.sql
+*.zip
+*.tar.gz
 .DS_Store
+Thumbs.db
 config/database.php
+
+# --- Binaries ---
+*.exe
+*.dll
+*.pdb
+*.lib
