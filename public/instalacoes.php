@@ -70,6 +70,11 @@ require_once __DIR__ . '/includes/header.php';
                     <td>
                         <div style="font-weight:bold; color:var(--text);"><?= htmlspecialchars($item['empresa']) ?></div>
                         <div style="font-size:12px; color:var(--text2);"><?= htmlspecialchars($item['nome']) ?></div>
+                        <?php if ($item['plano_nome']): ?>
+                            <div style="margin-top:5px;"><span class="badge success" style="font-size:9px; padding:2px 8px;"><?= $item['plano_nome'] ?></span></div>
+                        <?php else: ?>
+                            <div style="margin-top:5px;"><span class="badge warning" style="font-size:9px; padding:2px 8px;">SEM PLANO</span></div>
+                        <?php endif; ?>
                     </td>
                     <td>
                         <div style="font-size:11px; color:var(--text2); font-family:monospace;">UUID: <?= substr($item['uuid'], 0, 18) ?>...</div>

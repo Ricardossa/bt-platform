@@ -8,7 +8,7 @@ use BT\App\Empresa\EmpresaController;
 
 $controller = new EmpresaController();
 
-$id = (int) ($_GET['id'] ?? 0);
+$id = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
 
 $empresaDados = $id > 0
     ? $controller->buscarPorId($id)
@@ -69,6 +69,9 @@ require_once __DIR__ . '/includes/header.php';
         <hr style="margin:20px 0;">
 
         <form method="POST">
+            <?php if ($id > 0): ?>
+                <input type="hidden" name="id" value="<?= $id ?>">
+            <?php endif; ?>
 
             <div class="form-group">
                 <label>Nome Fantasia</label>

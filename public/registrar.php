@@ -1,0 +1,138 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../bootstrap/app.php';
+require_once __DIR__ . '/../bootstrap/autoload.php';
+
+use BT\App\Empresa\EmpresaController;
+use BT\App\Services\ActivityService;
+
+$controller = new EmpresaController();
+$success = false;
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $dados = [
+        'nome_fantasia' => trim($_POST['nome_fantasia'] ?? ''),
+        'razao_social'  => trim($_POST['nome_proprietario'] ?? ''), // Usando razao_social como nome do dono no registro publico
+        'cnpj'          => trim($_POST['cnpj'] ?? ''),
+        'whatsapp'      => preg_replace('/\D/', '', $_POST['whatsapp'] ?? ''),
+        'email'         => trim($_POST['email'] ?? ''),
+        'tema'          => 'blue'
+    ];
+
+    if (empty($dados['nome_fantasia']) || empty($dados['whatsapp']) || empty($dados['cnpj'])) {
+        $error = 'Por favor, preencha o nome do negócio, o CPF/CNPJ e o WhatsApp.';
+    } else {
+        try {
+            $ok = $controller->salvar($dados);
+            if ($ok) {
+                $success = true;
+                ActivityService::log('INFO', 'LEAD', "Nova solicitação de cadastro: {$dados['nome_fantasia']}", $dados, 'Público');
+            } else {
+                $error = 'Ocorreu um erro ao processar sua solicitação. Tente novamente.';
+            }
+        } catch (Exception $e) {
+            $error = 'Erro: ' . $e->getMessage();
+        }
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastre seu Negócio - Brandão Tech</title>
+    <link rel="stylesheet" href="/assets/css/theme.css">
+    <link rel="stylesheet" href="/assets/css/layout.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <style>
+        :root { --primary: #1565C0; --secondary: #1DB4FF; }
+        body { background: #081421; color: #fff; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .reg-container { max-width: 500px; width: 100%; }
+        .reg-card { background: #132238; border: 1px solid #1E3552; border-radius: 20px; padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .logo-box { text-align: center; margin-bottom: 30px; }
+        .logo-box img { height: 60px; }
+        h1 { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 10px; color: var(--secondary); }
+        p.subtitle { text-align: center; color: #94a3b8; font-size: 14px; margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+        .form-control { width: 100%; padding: 15px; background: #081421; border: 1px solid #1E3552; border-radius: 12px; color: #fff; font-size: 15px; box-sizing: border-box; transition: 0.3s; }
+        .form-control:focus { border-color: var(--secondary); outline: none; box-shadow: 0 0 10px rgba(29, 180, 255, 0.2); }
+        .btn-submit { width: 100%; padding: 18px; background: linear-gradient(135deg, var(--primary), #004ba0); border: none; border-radius: 12px; color: #fff; font-weight: 800; font-size: 16px; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .btn-submit:active { transform: scale(0.98); }
+        .alert { padding: 20px; border-radius: 12px; margin-bottom: 25px; font-size: 14px; line-height: 1.5; }
+        .alert-success { background: rgba(24, 201, 100, 0.1); border: 1px solid #18C964; color: #18C964; text-align: center; }
+        .alert-error { background: rgba(255, 77, 77, 0.1); border: 1px solid #FF4D4D; color: #FF4D4D; }
+        .footer-text { text-align: center; margin-top: 30px; font-size: 12px; color: #4b5563; }
+    </style>
+</head>
+<body>
+
+    <div class="reg-container animate__animated animate__fadeIn">
+        <div class="logo-box">
+            <img src="https://api.brandaotech.com.br/uploads/logo/logo.png" alt="Brandão Tech">
+        </div>
+
+        <div class="reg-card">
+            <?php if ($success): ?>
+                <div class="alert alert-success animate__animated animate__zoomIn">
+                    <i class="fa-solid fa-circle-check" style="font-size: 40px; display: block; margin-bottom: 15px;"></i>
+                    <b style="font-size: 18px;">Solicitação Enviada!</b><br><br>
+                    Recebemos seus dados. Nossa equipe entrará em contato via WhatsApp em breve para ativar sua unidade SaaS.
+                    <br><br>
+                    <a href="/" class="btn-submit" style="display:inline-block; text-decoration:none; padding:12px 30px;">OK, ENTENDI</a>
+                </div>
+            <?php else: ?>
+                <h1>Seja um Parceiro</h1>
+                <p class="subtitle">Preencha os dados abaixo para solicitar a ativação da sua unidade no nosso ecossistema SaaS.</p>
+
+                <?php if ($error): ?>
+                    <div class="alert alert-error">
+                        <i class="fa-solid fa-triangle-exclamation"></i> <?= htmlspecialchars($error) ?>
+                    </div>
+                <?php endif; ?>
+
+                <form method="POST">
+                    <div class="form-group">
+                        <label>Nome do Negócio / Empresa</label>
+                        <input type="text" name="nome_fantasia" class="form-control" placeholder="Ex: Barbearia do Centro" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>CPF ou CNPJ</label>
+                        <input type="text" name="cnpj" class="form-control" placeholder="00.000.000/0000-00" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Nome do Proprietário</label>
+                        <input type="text" name="nome_proprietario" class="form-control" placeholder="Seu nome completo" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>WhatsApp (com DDD)</label>
+                        <input type="tel" name="whatsapp" class="form-control" placeholder="(00) 00000-0000" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>E-mail de Contato</label>
+                        <input type="email" name="email" class="form-control" placeholder="exemplo@email.com" required>
+                    </div>
+
+                    <button type="submit" class="btn-submit">
+                        <i class="fa-solid fa-paper-plane"></i> SOLICITAR ATIVAÇÃO SAAS
+                    </button>
+                </form>
+            <?php endif; ?>
+        </div>
+
+        <div class="footer-text">
+            &copy; 2026 Brandão Tech Integration. Tecnologia que transforma filas.
+        </div>
+    </div>
+
+</body>
+</html>

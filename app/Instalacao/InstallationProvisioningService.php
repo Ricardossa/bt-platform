@@ -80,12 +80,14 @@ final class InstallationProvisioningService
     {
         $produto = $dados['produto'] ?? 'BT_QUEUE_ENTERPRISE';
         $statusFinal = (isset($dados['status']) && ($dados['status'] === 'OFFLINE' || $dados['status'] === 'SUSPENSO')) ? 'OFFLINE' : 'ONLINE';
+        $planoId = isset($dados['plano_id']) && (int)$dados['plano_id'] > 0 ? (int)$dados['plano_id'] : null;
 
         $ok = Database::execute(
-            "INSERT INTO instalacoes (empresa_id, produto, nome, uuid, token, codigo_ativacao, expiracao_ativacao, versao, status)
-             VALUES (?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 2 HOUR), ?, ?)",
+            "INSERT INTO instalacoes (empresa_id, plano_id, produto, nome, uuid, token, codigo_ativacao, expiracao_ativacao, versao, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 2 HOUR), ?, ?)",
             [
                 $dados['empresa_id'],
+                $planoId,
                 $produto,
                 $dados['nome'],
                 $contexto['uuid'],

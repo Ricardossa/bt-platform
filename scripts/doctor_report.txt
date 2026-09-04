@@ -1,0 +1,18 @@
+=== MASTER DOCTOR REPORT ===
+Check: Table Companies ... FAILED: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'bt_platform.empresas' doesn't exist
+Check: Table Installations ... FAILED: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'bt_platform.instalacoes' doesn't exist
+Check: Table Tenants ... FAILED: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'bt_platform.tenants' doesn't exist
+Check: Table Licenses ... FAILED: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'bt_platform.licencas' doesn't exist
+Check: Table Products ... FAILED: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'bt_platform.produtos' doesn't exist
+
+--- STRUCTURES ---
+Table: empresas
+  Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'bt_platform.empresas' doesn't exist
+Table: instalacoes
+  Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'bt_platform.instalacoes' doesn't exist
+Table: tenants
+  Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'bt_platform.tenants' doesn't exist
+Table: licencas
+  Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'bt_platform.licencas' doesn't exist
+Table: produtos
+  Error: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'bt_platform.produtos' doesn't exist

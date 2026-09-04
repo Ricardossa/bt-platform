@@ -49,17 +49,17 @@ final class InstalacaoController
             "UPDATE instalacoes
              SET
                 empresa_id = ?,
+                plano_id = ?,
                 nome = ?,
                 uuid = ?,
                 versao = ?,
-                status = ?,
-                ultima_sincronizacao = ?
+                status = ?
              WHERE id = ?",
             [
                 $dados['empresa_id'],
+                $dados['plano_id'] > 0 ? $dados['plano_id'] : null,
                 $dados['nome'],
                 $dados['uuid'],
-                $dados['token'],
                 $dados['versao'],
                 $dados['status'],
                 $id
@@ -75,10 +75,12 @@ final class InstalacaoController
             "SELECT
                 i.*,
                 e.nome_fantasia AS empresa,
+                p.nome AS plano_nome,
                 (SELECT COUNT(*) FROM dispositivos d WHERE d.instalacao_id = i.id AND d.ativo = 1) AS total_dispositivos,
                 (SELECT MAX(ultima_sincronizacao) FROM dispositivos d WHERE d.instalacao_id = i.id AND d.ativo = 1) AS ultimo_dispositivo
              FROM instalacoes i
              LEFT JOIN empresas e ON e.id = i.empresa_id
+             LEFT JOIN planos p ON p.id = i.plano_id
              ORDER BY e.nome_fantasia, i.nome"
         );
     }

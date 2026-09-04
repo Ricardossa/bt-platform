@@ -161,8 +161,8 @@ final class DeviceService
             ];
         }
 
-        // --- BUSCA GLOBAL (Fix Error 500 Duplicate Entry) ---
-        $dispositivo = $this->buscarPorUuidGlobal($deviceUuid);
+        // --- BUSCA POR HARDWARE + LICENÇA (Permite multitenancy na mesma VM) ---
+        $dispositivo = $this->buscarPorInstalacaoEId($instalacaoId, $deviceUuid);
 
         if ($dispositivo === null) {
             $id = $this->registrar(
@@ -177,11 +177,10 @@ final class DeviceService
             ];
         }
 
-        // Se o dispositivo já existe, apenas atualizamos seus dados e o vínculo
+        // Se o dispositivo já existe para esta instalação, apenas atualizamos seus dados
         $this->atualizar(
             (int) $dispositivo['id'],
-            $request,
-            $instalacaoId
+            $request
         );
 
         return [

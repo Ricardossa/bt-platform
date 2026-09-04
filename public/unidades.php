@@ -16,7 +16,6 @@ if (isset($_GET['delete'])) {
     exit;
 }
 
-// [LITE v3.2.6] Lógica de Monitoramento Blindada (Anti-Crash)
 try {
     $unidades = Database::fetchAll("
         SELECT
@@ -31,7 +30,6 @@ try {
             i.ultima_sincronizacao,
             i.codigo_ativacao as pin,
             (SELECT status FROM licencas WHERE instalacao_id = i.id ORDER BY id DESC LIMIT 1) as status_licenca,
-            (SELECT slug FROM tenants WHERE id = i.id LIMIT 1) as tenant_slug,
             (SELECT COUNT(*) FROM dispositivos d WHERE d.instalacao_id = i.id AND d.ativo = 1) as total_dispositivos
         FROM instalacoes i
         LEFT JOIN empresas e ON e.id = i.empresa_id
@@ -54,9 +52,8 @@ try {
             i.versao,
             i.ultima_sincronizacao,
             e.nome_fantasia as empresa,
-            0 as total_dispositivos,
+            (SELECT COUNT(*) FROM dispositivos d WHERE d.instalacao_id = i.id AND d.ativo = 1) as total_dispositivos,
             'UNKNOWN' as status_licenca,
-            '' as tenant_slug,
             '' as pin
         FROM instalacoes i
         LEFT JOIN empresas e ON e.id = i.empresa_id
@@ -69,7 +66,7 @@ function getRealStatus(?string $lastSync): string {
     if (!$lastSync) return 'OFFLINE';
     $last = strtotime($lastSync);
     $diff = time() - $last;
-    return ($diff < 300) ? 'ONLINE' : 'OFFLINE'; // 5 minutos de tolerância
+    return ($diff < 900) ? 'ONLINE' : 'OFFLINE'; // 15 minutos de tolerância (suporta atrasos normais)
 }
 ?>
 
@@ -127,7 +124,15 @@ function getRealStatus(?string $lastSync): string {
                         <small style="font-size:9px; color:var(--text3);">Sinc: <?= ($u['ultima_sincronizacao'] ?? null) ? date('d/m H:i', strtotime($u['ultima_sincronizacao'])) : 'Nunca' ?></small>
                     </td>
                     <td align="center">
-                        <div style="font-size:22px; font-weight:900; color:var(--secondary);"><?= $u['total_dispositivos'] ?? 0 ?></div>
+                        <?php
+                            $dispCount = (int)($u['total_dispositivos'] ?? 0);
+                            // Se for Appliance (Lite/Enterprise) e sinc recente, mostra pelo menos 1 (Auto-registro)
+                            if ($dispCount === 0 && ($u['ultima_sincronizacao'] ?? null)) {
+                                $lastS = strtotime($u['ultima_sincronizacao']);
+                                if (time() - $lastS < 900) $dispCount = 1;
+                            }
+                        ?>
+                        <div style="font-size:22px; font-weight:900; color:var(--secondary);"><?= $dispCount ?></div>
                     </td>
                     <td>
                         <div style="display:flex; gap:8px;">

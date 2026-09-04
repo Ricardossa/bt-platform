@@ -172,7 +172,7 @@ require_once __DIR__ . '/includes/header.php';
 
         <?php
         // Gerar QR Code
-        $urlPlatform = 'http://api.brandaotech.com.br:8080/api/v1/sync.php';
+        $urlPlatform = 'https://api.brandaotech.com.br/api/v1/sync.php';
         $dadosQR = json_encode([
             'protocol' => 1,
             'url' => $urlPlatform,

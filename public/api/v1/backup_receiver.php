@@ -26,6 +26,8 @@ if (empty($uuid) || empty($token)) {
     exit;
 }
 
+$hashEnviado = trim($_POST['hash'] ?? '');
+
 // 1. Validação de Segurança e Identificação Humana
 $instalacao = Database::fetch("
     SELECT i.id, i.nome as unidade_nome, e.nome_fantasia as empresa_nome
@@ -55,27 +57,70 @@ if (!isset($_FILES['backup']) || $_FILES['backup']['error'] !== UPLOAD_ERR_OK) {
     echo json_encode(['success' => false, 'message' => 'Arquivo de backup não recebido corretamente.']);
     exit;
 }
-$filename = date('Ymd_His') . '_banco.zip';
+
+$tempFile = $_FILES['backup']['tmp_name'];
+
+// 4. Validação de Integridade (v2.6.0)
+if (!empty($hashEnviado)) {
+    $hashLocal = hash_file('sha256', $tempFile);
+    if ($hashLocal !== $hashEnviado) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Falha de integridade: o arquivo chegou corrompido.']);
+        exit;
+    }
+}
+
+$filename = date('Ymd_His') . '_banco.sql.gz';
 $targetPath = $storageDir . $filename;
 
-if (move_uploaded_file($_FILES['backup']['tmp_name'], $targetPath)) {
+if (move_uploaded_file($tempFile, $targetPath)) {
 
-    // 3. Rotação Inteligente (Mantém apenas os últimos 3)
-    $files = glob($storageDir . '*.zip');
-    if (count($files) > 3) {
-        array_multisort(array_map('filemtime', $files), SORT_ASC, $files);
-        while (count($files) > 3) {
-            $oldFile = array_shift($files);
-            @unlink($oldFile);
-        }
-    }
+    // 5. Política de Retenção GFS (v2.6.0)
+    // - 7 Diários, 4 Semanais, 3 Mensais
+    rotacionarBackups($storageDir);
 
     echo json_encode([
         'success' => true,
-        'message' => 'Backup recebido e arquivado com sucesso.',
+        'message' => 'SafeBackup arquivado e validado com sucesso.',
         'filename' => $filename
     ]);
 } else {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Erro ao salvar backup no storage da Master.']);
+}
+
+/**
+ * Lógica de Retenção GFS (Grandfather-Father-Son)
+ */
+function rotacionarBackups(string $dir): void
+{
+    $files = glob($dir . '*.sql.gz');
+    if (!$files) return;
+
+    $now = time();
+    $day = 86400;
+
+    foreach ($files as $file) {
+        $mtime = filemtime($file);
+        $ageDays = floor(($now - $mtime) / $day);
+
+        $dateInfo = getdate($mtime);
+        $isSunday = ($dateInfo['wday'] === 0);
+        $isFirstOfMonth = ($dateInfo['mday'] === 1);
+
+        $manter = false;
+
+        // Regra 1: Manter últimos 7 dias (Diários)
+        if ($ageDays <= 7) $manter = true;
+
+        // Regra 2: Manter os últimos 4 Domingos (Semanais)
+        if ($isSunday && $ageDays <= 30) $manter = true;
+
+        // Regra 3: Manter os últimos 3 meses (Mensais - dia 01)
+        if ($isFirstOfMonth && $ageDays <= 90) $manter = true;
+
+        if (!$manter) {
+            @unlink($file);
+        }
+    }
 }

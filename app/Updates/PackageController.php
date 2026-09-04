@@ -7,18 +7,27 @@ namespace BT\App\Updates;
 use Exception;
 use ZipArchive;
 
+/**
+ * Motor de Empacotamento Multi-Plataforma (v2.0)
+ * Suporta Enterprise (Farmácia) e Enterprise Lite (SaaS/Barbearia).
+ */
 final class PackageController
 {
-    private string $enterpriseDir;
+    private string $currentProjectDir;
     private string $versionPath;
     private string $storageDir;
     private string $publicDir;
+    private string $product;
 
-    public function __construct()
+    public function __construct(string $product = 'BT_QUEUE_ENTERPRISE')
     {
-        // Normaliza o caminho base para evitar erros de substr
-        $this->enterpriseDir = (string) realpath(dirname(BT_ROOT) . '/bt-enterprise') . DIRECTORY_SEPARATOR;
-        $this->versionPath = $this->enterpriseDir . 'public' . DIRECTORY_SEPARATOR . 'version.json';
+        $this->product = $product;
+
+        // Define a pasta de origem baseada no produto
+        $folder = ($product === 'BT_QUEUE_ENTERPRISE_LITE') ? 'bt-enterprise-lite' : 'bt-enterprise';
+
+        $this->currentProjectDir = (string) realpath(dirname(BT_ROOT) . '/' . $folder) . DIRECTORY_SEPARATOR;
+        $this->versionPath = $this->currentProjectDir . 'public' . DIRECTORY_SEPARATOR . 'version.json';
         $this->storageDir = (string) realpath(BT_ROOT . '/storage/updates') . DIRECTORY_SEPARATOR;
         $this->publicDir = (string) realpath(BT_ROOT . '/public') . DIRECTORY_SEPARATOR;
     }
@@ -32,16 +41,21 @@ final class PackageController
 
     public function generate(string $newVersion): array
     {
+        // [v2.0.1] Prevenção de Erro 500: Aumenta limites para processamento de arquivos
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
+
         try {
             $this->updateVersionFile($newVersion);
             if (!is_dir($this->storageDir)) mkdir($this->storageDir, 0775, true);
 
-            $zipName = "BT_Update_v{$newVersion}_" . date('Ymd_His') . ".zip";
+            $prefix = ($this->product === 'BT_QUEUE_ENTERPRISE_LITE') ? 'LITE' : 'Update';
+            $zipName = "BT_{$prefix}_v{$newVersion}_" . date('Ymd_His') . ".zip";
             $zipPath = $this->storageDir . $zipName;
 
             $zip = new ZipArchive();
             if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-                throw new Exception("Falha ao criar arquivo ZIP OTA");
+                throw new Exception("Falha ao criar arquivo ZIP OTA para {$this->product}");
             }
 
             // --- CONTEÚDO OTA ---
@@ -50,29 +64,44 @@ final class PackageController
             $this->addTree($zip, 'public', ['php', 'css', 'js', 'png', 'jpg', 'jpeg', 'svg', 'gif', 'ico', 'mp3', 'wav', 'ttf', 'woff', 'woff2']);
             $this->addAllowedFile($zip, 'public/version.json');
 
-            foreach (['BT_Kernel.vbs', 'BT_Sync_Service.vbs', 'BT_Watchdog.vbs', 'Ligar_Impressora_Local.bat', 'print_bridge.php', 'Ligar_Sistema.bat'] as $file) {
-                $this->addAllowedFile($zip, $file);
+            // Lançadores e Utilitários
+            $files = ['BT_Kernel.vbs', 'BT_Sync_Service.vbs', 'BT_Watchdog.vbs', 'Ligar_Impressora_Local.bat', 'print_bridge.php', 'Ligar_Sistema.bat'];
+            foreach ($files as $file) {
+                if (!$this->addAllowedFile($zip, $file)) {
+                    // Log silencioso ou ignorar se arquivo nÃ£o existir
+                }
             }
 
-            $zip->close();
+            if (!$zip->close()) {
+                throw new Exception("Falha ao finalizar o arquivo ZIP (PermissÃ£o ou EspaÃ§o)");
+            }
 
             return [
                 'success' => true,
                 'file_name' => $zipName,
                 'download_url' => 'api/v1/updates_download.php?id=' . $zipName,
-                'version' => $newVersion
+                'version' => $newVersion,
+                'product' => $this->product
             ];
-        } catch (Exception $e) { return ['success' => false, 'message' => $e->getMessage()]; }
+        } catch (Exception $e) {
+            \BT\Core\Logger::error("Gerador Erro: " . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
     }
 
     public function generateFull(): array
     {
+        // [v2.0.1] Prevenção de Erro 500
+        set_time_limit(600);
+        ini_set('memory_limit', '1G');
+
         try {
-            $zipPath = $this->publicDir . 'bt-enterprise.zip';
+            $prefix = ($this->product === 'BT_QUEUE_ENTERPRISE_LITE') ? 'bt-enterprise-lite' : 'bt-enterprise';
+            $zipPath = $this->publicDir . "{$prefix}.zip";
 
             $zip = new ZipArchive();
             if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-                throw new Exception("Falha ao criar pacote FULL");
+                throw new Exception("Falha ao criar pacote FULL para {$this->product}");
             }
 
             // 1. Código e Assets
@@ -93,7 +122,8 @@ final class PackageController
             $this->addAllowedFile($zip, 'install/apache.conf');
 
             // 4. Lançadores
-            foreach (['BT_Kernel.vbs', 'BT_Sync_Service.vbs', 'BT_Watchdog.vbs', 'Ligar_Impressora_Local.bat', 'print_bridge.php', 'Ligar_Sistema.bat'] as $file) {
+            $files = ['BT_Kernel.vbs', 'BT_Sync_Service.vbs', 'BT_Watchdog.vbs', 'Ligar_Impressora_Local.bat', 'print_bridge.php', 'Ligar_Sistema.bat'];
+            foreach ($files as $file) {
                 $this->addAllowedFile($zip, $file);
             }
 
@@ -101,7 +131,7 @@ final class PackageController
 
             return [
                 'success' => true,
-                'file_name' => 'bt-enterprise.zip',
+                'file_name' => "{$prefix}.zip",
                 'size' => round(filesize($zipPath) / 1024 / 1024, 2) . ' MB'
             ];
         } catch (Exception $e) { return ['success' => false, 'message' => $e->getMessage()]; }
@@ -109,7 +139,7 @@ final class PackageController
 
     private function addTree(ZipArchive $zip, string $relativeDir, array $allowedExts): void
     {
-        $directory = $this->enterpriseDir . str_replace('/', DIRECTORY_SEPARATOR, $relativeDir);
+        $directory = $this->currentProjectDir . str_replace('/', DIRECTORY_SEPARATOR, $relativeDir);
         if (!is_dir($directory)) return;
 
         $files = new \RecursiveIteratorIterator(
@@ -120,7 +150,7 @@ final class PackageController
         foreach ($files as $file) {
             if ($file->isDir()) continue;
             $path = $file->getRealPath();
-            $relativePath = str_replace(DIRECTORY_SEPARATOR, '/', substr($path, strlen($this->enterpriseDir)));
+            $relativePath = str_replace(DIRECTORY_SEPARATOR, '/', substr($path, strlen($this->currentProjectDir)));
             $ext = strtolower(pathinfo($relativePath, PATHINFO_EXTENSION));
 
             if (in_array($ext, $allowedExts) && !self::isProhibited($relativePath)) {
@@ -131,7 +161,7 @@ final class PackageController
 
     private function addAllowedFile(ZipArchive $zip, string $relativePath): void
     {
-        $path = $this->enterpriseDir . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+        $path = $this->currentProjectDir . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
         if (is_file($path)) {
             $zip->addFile($path, $relativePath);
         }
@@ -155,5 +185,20 @@ final class PackageController
     {
         $data = ['version' => $version, 'build' => date('Ymd') . '_AUTO_BUILD', 'channel' => 'stable'];
         file_put_contents($this->versionPath, json_encode($data, JSON_PRETTY_PRINT));
+    }
+
+    /**
+     * Limpa pacotes antigos para economizar espaÃ§o (MantÃ©m os 15 mais recentes)
+     */
+    public function cleanOldPackages(): void
+    {
+        $files = glob($this->storageDir . 'BT_*.zip');
+        if (count($files) > 15) {
+            array_multisort(array_map('filemtime', $files), SORT_ASC, $files);
+            while (count($files) > 15) {
+                $oldFile = array_shift($files);
+                @unlink($oldFile);
+            }
+        }
     }
 }

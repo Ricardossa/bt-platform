@@ -6,26 +6,32 @@ require_once __DIR__ . '/../../../bootstrap/app.php';
 
 use BT\App\Updates\UpdateController;
 
-$releaseId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-if (!$releaseId) {
-    http_response_code(400);
-    exit('Release OTA invalido.');
+$idOrName = $_GET['id'] ?? '';
+
+if (is_numeric($idOrName)) {
+    $releaseId = (int)$idOrName;
+    $release = (new UpdateController())->getById($releaseId);
+    if (!$release) {
+        http_response_code(404);
+        exit('Pacote OTA indisponivel.');
+    }
+    $filename = basename((string) $release['arquivo_path']);
+} else {
+    // [v2.7.3] Suporte a download direto por nome (Gerador UI)
+    $filename = basename($idOrName);
+    if (empty($filename) || !str_ends_with($filename, '.zip')) {
+        http_response_code(400);
+        exit('Nome de pacote invalido.');
+    }
 }
 
-$release = (new UpdateController())->getById($releaseId);
-if (!$release) {
-    http_response_code(404);
-    exit('Pacote OTA indisponivel.');
-}
-
-$filename = basename((string) $release['arquivo_path']);
 $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 $subPasta = ($ext === 'zip') ? 'updates/' : 'apks/';
 $path = dirname(__DIR__, 3) . '/storage/' . $subPasta . $filename;
 
 if (!is_file($path)) {
     http_response_code(404);
-    exit('Arquivo físico não encontrado no servidor.');
+    exit('Arquivo físico não encontrado no servidor: ' . $filename);
 }
 
 $contentType = ($ext === 'apk') ? 'application/vnd.android.package-archive' : 'application/zip';

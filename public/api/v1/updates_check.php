@@ -8,8 +8,9 @@ use BT\App\Updates\UpdateController;
 use BT\Core\Http\JsonResponse;
 
 try {
+    $produto = trim((string)($_GET['p'] ?? 'BT_QUEUE_ENTERPRISE'));
     $controller = new UpdateController();
-    $latest = $controller->getLatest();
+    $latest = $controller->getLatest($produto);
 
     if (!$latest) {
         JsonResponse::success(['update_available' => false]);
@@ -29,19 +30,27 @@ try {
         $protocol = $isHttps ? "https" : "http";
         $fullUrl = "$protocol://{$_SERVER['HTTP_HOST']}/api/v1/updates_download.php?id=" . (int)$latest['id'];
 
-        JsonResponse::success([
+        // [LITE v4.1.1] Resposta Flat para compatibilidade total com versÃµes antigas
+        $response = [
             'update_available' => true,
             'version' => $latestClean,
             'release_id' => (int) $latest['id'],
-            'url' => $fullUrl, // Campo vital para compatibilidade com clientes antigos
+            'url' => $fullUrl,
             'download_path' => '/api/v1/updates_download.php?id=' . (int) $latest['id'],
             'sha256' => $latest['checksum_sha256'],
             'mandatory' => (bool)$latest['is_mandatory'],
             'changelog' => $latest['changelog'],
             'channel' => $latest['canal'] ?? 'stable'
-        ]);
+        ];
+
+        // Mantemos o wrapper para novos clientes, mas enviamos os campos na raiz para os antigos
+        JsonResponse::success(array_merge($response, ['success' => true, 'data' => $response]));
     } else {
-        JsonResponse::success(['update_available' => false, 'debug' => "Master: $latestClean, Client: $currentClean"]);
+        JsonResponse::success([
+            'update_available' => false,
+            'success' => true,
+            'debug' => "Master: $latestClean, Client: $currentClean"
+        ]);
     }
 
 } catch (Exception $e) {

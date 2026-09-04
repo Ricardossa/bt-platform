@@ -57,17 +57,29 @@ if [ $? -eq 0 ]; then
         # Copia o Banco da Master (O dump que acabamos de fazer)
         cp "$INTERNAL_BKP_DIR/$DB_FILENAME" "$FINAL_PATH/"
 
-        # Copia os Backups das Unidades (Tudo na storage/backups EXCETO a pasta internal)
-        # Usamos o find para pegar apenas as pastas de clientes
+        # Copia os Backups das Unidades (Organizados por Empresa/Unidade)
+        # Usamos o find para pegar as pastas de clientes e espelhar no TrueNAS
+        echo "📂 Sincronizando bancos de dados (.sql.gz) para o TrueNAS..."
         find "$STORAGE_DIR" -maxdepth 1 -mindepth 1 -type d ! -name "internal" -exec cp -r {} "$FINAL_PATH/unidades/" \;
+
+        # [v2.7.0] BACKUP DE IMAGENS (UPLOADS) - Unidade Enterprise
+        # Captura as fotos dos barbeiros, logos e promos
+        UPLOADS_SRC="/opt/bt-platform/bt-enterprise-lite/public/uploads"
+        if [ -d "$UPLOADS_SRC" ]; then
+            echo "📸 Gerando pacote de imagens (uploads)..."
+            tar -czf "$INTERNAL_BKP_DIR/enterprise_uploads_$DATE.tar.gz" -C "$UPLOADS_SRC" .
+            cp "$INTERNAL_BKP_DIR/enterprise_uploads_$DATE.tar.gz" "$FINAL_PATH/"
+            echo "✅ Imagens sincronizadas no TrueNAS!"
+        fi
 
         echo "✅ Tudo sincronizado com sucesso no TrueNAS!"
     else
         echo "⚠️ TrueNAS Offline. Backup mantido apenas na VM."
     fi
 
-    # 6. Rotação (VM)
+    # 6. RotaÃ§Ã£o (VM)
     find "$INTERNAL_BKP_DIR" -name "master_db_*.sql.gz" -mtime +$BKP_RETENTION -exec rm {} \;
+    find "$INTERNAL_BKP_DIR" -name "enterprise_uploads_*.tar.gz" -mtime +$BKP_RETENTION -exec rm {} \;
     echo "✅ Limpeza concluída ($BKP_RETENTION dias)."
 else
     echo "❌ Erro crítico ao gerar backup."

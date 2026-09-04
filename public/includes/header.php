@@ -112,9 +112,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             Financeiro
         </a>
 
-        <a href="precos.php" class="<?= $currentPage === 'precos.php' ? 'active' : '' ?>">
+        <a href="precos.php" class="<?= ($currentPage === 'precos.php' || $currentPage === 'planos_gerenciar.php') ? 'active' : '' ?>">
             <i class="fa-solid fa-tags"></i>
-            Tabela de Preços
+            Ofertas Comerciais
         </a>
 
         <a href="updates.php" class="<?= $currentPage === 'updates.php' ? 'active' : '' ?>">

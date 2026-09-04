@@ -24,13 +24,19 @@ $produtos = Database::fetchAll(
     "SELECT slug, nome FROM produtos ORDER BY nome ASC"
 );
 
+$planos = Database::fetchAll(
+    "SELECT id, nome FROM planos WHERE status = 'ATIVO' ORDER BY preco_mensal ASC"
+);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $dados = [
         'empresa_id' => (int) ($_POST['empresa_id'] ?? 0),
+        'plano_id' => (int) ($_POST['plano_id'] ?? 0),
         'produto' => $_POST['produto'] ?? 'BT_QUEUE_ENTERPRISE',
         'nome' => trim($_POST['nome'] ?? ''),
         'slug' => trim($_POST['slug'] ?? ''),
+        'uuid' => $_POST['uuid'] ?? '',
         'versao' => trim($_POST['versao'] ?? '4.0.0'),
         'status' => $_POST['status'] ?? 'ONLINE'
     ];
@@ -99,6 +105,7 @@ Cadastro de uma instalação da BT Queue Enterprise.
 <form method="POST">
 <?php if ($id > 0): ?>
     <input type="hidden" name="id" value="<?= $id ?>">
+    <input type="hidden" name="uuid" value="<?= $instalacao['uuid'] ?>">
 <?php endif; ?>
 
 <div class="form-group">
@@ -119,6 +126,18 @@ Cadastro de uma instalação da BT Queue Enterprise.
         <?php foreach ($produtos as $p): ?>
             <option value="<?= $p['slug'] ?>" <?= ($instalacao['produto'] ?? 'BT_QUEUE_ENTERPRISE') === $p['slug'] ? 'selected' : '' ?>>
                 <?= htmlspecialchars($p['nome']) ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+</div>
+
+<div class="form-group" style="margin-top:15px;">
+    <label>Pacote Comercial (Assinatura SaaS) *</label>
+    <select name="plano_id" class="form-control" required>
+        <option value="">Selecione um pacote...</option>
+        <?php foreach ($planos as $plano): ?>
+            <option value="<?= $plano['id'] ?>" <?= (isset($instalacao['plano_id']) && $instalacao['plano_id'] == $plano['id']) ? 'selected' : '' ?>>
+                <?= htmlspecialchars($plano['nome']) ?>
             </option>
         <?php endforeach; ?>
     </select>
@@ -214,7 +233,7 @@ Cadastro de uma instalação da BT Queue Enterprise.
         </p>
 
         <?php
-        $syncUrl = 'http://api.brandaotech.com.br:8080/api/v1/sync.php';
+        $syncUrl = 'https://api.brandaotech.com.br/api/v1/sync.php';
         $quickLoad = "{$syncUrl}|{$instalacao['uuid']}|{$instalacao['token']}";
         ?>
 

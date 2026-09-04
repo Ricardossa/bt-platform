@@ -51,7 +51,8 @@ require_once __DIR__ . '/includes/header.php';
                 <div class="form-group">
                     <label>Produto de Atualização</label>
                     <select name="produto" class="form-control" required>
-                        <option value="BT_QUEUE_ENTERPRISE">🎫 BT Queue Enterprise (ZIP)</option>
+                        <option value="BT_QUEUE_ENTERPRISE">🎫 BT Queue Enterprise (Farmácia)</option>
+                        <option value="BT_QUEUE_ENTERPRISE_LITE">💈 BT Queue Lite (SaaS)</option>
                         <option value="BT1_COLETOR_PRO">📱 BT1 Coletor Pro (APK)</option>
                     </select>
                 </div>
@@ -103,7 +104,11 @@ require_once __DIR__ . '/includes/header.php';
                     <tr>
                         <td>
                             <span style="font-size:11px; font-weight:bold; color:var(--primary);">
-                                <?= $up['produto'] === 'BT1_COLETOR_PRO' ? '📱 COLETOR' : '🎫 ENTERPRISE' ?>
+                                <?php
+                                    if ($up['produto'] === 'BT1_COLETOR_PRO') echo '📱 COLETOR';
+                                    elseif ($up['produto'] === 'BT_QUEUE_ENTERPRISE_LITE') echo '💈 LITE (SAAS)';
+                                    else echo '🎫 ENTERPRISE';
+                                ?>
                             </span>
                         </td>
                         <td><b style="color:var(--secondary);">v<?= $up['versao'] ?></b></td>

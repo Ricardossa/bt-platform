@@ -9,7 +9,8 @@ use BT\App\Updates\PackageController;
 
 Auth::requireAdmin();
 
-$controller = new PackageController();
+$produto = $_GET['p'] ?? $_POST['produto'] ?? 'BT_QUEUE_ENTERPRISE';
+$controller = new PackageController($produto);
 $info = $controller->getVersionInfo();
 
 // Sugestão de próxima versão
@@ -70,9 +71,17 @@ require_once __DIR__ . '/includes/header.php';
 
             <form method="POST">
                 <div class="form-group">
+                    <label>Produto / Plataforma</label>
+                    <select name="produto" class="form-control" onchange="location.href='?p=' + this.value">
+                        <option value="BT_QUEUE_ENTERPRISE" <?= $produto === 'BT_QUEUE_ENTERPRISE' ? 'selected' : '' ?>>🎫 BT Queue Enterprise (Farmácia)</option>
+                        <option value="BT_QUEUE_ENTERPRISE_LITE" <?= $produto === 'BT_QUEUE_ENTERPRISE_LITE' ? 'selected' : '' ?>>💈 BT Queue Lite (SaaS)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-top:15px;">
                     <label>Número da Nova Versão</label>
                     <input type="text" name="nova_versao" class="form-control" value="<?= $nextVersion ?>" required>
-                    <p style="font-size:11px; color:var(--text2); margin-top:5px;">O sistema atualizará automaticamente o <code>version.json</code> da Enterprise.</p>
+                    <p style="font-size:11px; color:var(--text2); margin-top:5px;">O sistema atualizará automaticamente o <code>version.json</code> da pasta selecionada.</p>
                 </div>
 
                 <button type="submit" class="bt-button bt-primary" style="width:100%; margin-top:25px; padding:15px;">
