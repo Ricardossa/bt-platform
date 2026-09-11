@@ -1,8 +1,0 @@
-<resources>
-    <string name="app_name">BT TV Player</string>
-    <string name="set_url_title">Server Configuration</string>
-    <string name="set_url_message">Please enter the Server IP or URL:</string>
-    <string name="save">Save</string>
-    <string name="cancel">Cancel</string>
-    <string name="invalid_url">Please enter a valid URL</string>
-</resources>
